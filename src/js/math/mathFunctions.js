@@ -1,4 +1,6 @@
 // all functions are from http://bl.ocks.org/ivyywang/7c94cb5a3accd9913263
+export { eulerAngles, isValue};
+
 
 const to_radians = Math.PI / 180;
 const to_degrees = 180 / Math.PI;
@@ -333,6 +335,11 @@ function Snake(params) {
     return snake;
 }
 
-module.exports = {
-    eulerAngles: eulerAngles,
-};
+function isValue(x){
+    return x !== null && x !== undefined;
+}
+
+// module.exports = {
+//     eulerAngles: eulerAngles,
+//     isValue: isValue,
+// };

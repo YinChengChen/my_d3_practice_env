@@ -1,3 +1,6 @@
+// import { isValue } from "./mathFunctions";
+import { isValue } from "./math";
+export { Vector_snake };
 const Vector_snake = function(params){
     const PARTICLE_MULTIPLIER = 1/1000,
         MAX_INTENSITY = 10,
@@ -27,6 +30,7 @@ const Vector_snake = function(params){
     let buildGrid = function(data){
         let builder = createBuilder(data);
         let header = builder.header;
+        const x0 = header.x0, y0 = header.y0;
         const Δx = header.dx,
             Δy = header.dy,
             ni = header.nx,
@@ -56,6 +60,27 @@ const Vector_snake = function(params){
             }catch(e){
                 return null;
             }
+        };
+
+        let sphere_interpolate = function(lambda, phi){
+            let i = floodMod(lambda - x0, 360) / Δx;
+            let j = (y0 - phi) / Δy;
+
+            let fi = Math.floor(i), ci = fi + 1;
+            let fj = Math.floor(j), cj = fj + 1;
+
+            function floodMod(a, n){
+                let f = a - n * Math.floor(a / n);
+                return f === n ? 0 : f;
+            }
+
+            let row;
+            if((row = grid[fi])){
+                let g00 = row[fi];
+                let g10 = row[ci];
+
+            }
+
         };
 
         return {
@@ -212,6 +237,7 @@ const Vector_snake = function(params){
     return vector_snake;
 };
 
-module.exports = {
-    Vector_snake: Vector_snake,
-};
+
+// module.exports = {
+//     Vector_snake: Vector_snake,
+// };

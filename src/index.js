@@ -22,7 +22,7 @@ const app = createApp({
             isRotate: false,
             text: "Hello Earth",
             grid_step: [10, 10],
-            scale_radio: 2.5,
+            scale_ratio: 2.5,
             wheel_value: 0,
             earth_id: "#earth",
             earth_width: null,
@@ -51,7 +51,7 @@ const app = createApp({
             // 初始寫入圖片資訊到 vue
             this.svg_element.svg = d3.select(this.earth_id);
             // 設定縮放地球大小，讓 svg 知道 earth 可以設多大
-            this.svg_element.scale_size = Math.min(this.earth_width, this.earth_height) / this.scale_radio;
+            this.svg_element.scale_size = Math.min(this.earth_width, this.earth_height) / this.scale_ratio;
             // 設定地球投影置中與球大小
             this.svg_element.projection = d3.geoOrthographic().scale(this.svg_element.scale_size).translate([this.earth_width/2, this.earth_height/2]);
             this.svg_element.path = d3.geoPath().projection(this.svg_element.projection);
@@ -68,9 +68,9 @@ const app = createApp({
         },
         onWheel(event){
             if(event.deltaY < 0){
-                this.scale_radio -= 0.125;
+                this.scale_ratio -= 0.125;
             }else{
-                this.scale_radio += 0.125;
+                this.scale_ratio += 0.125;
             }
         },
         mousedown(event){
@@ -112,7 +112,7 @@ const app = createApp({
             },
             deep: true
         },
-        scale_radio(){
+        scale_ratio(){
             this.svg_element.svg.selectAll("*").remove();
             this.setGlobe();
             this.drawMap();

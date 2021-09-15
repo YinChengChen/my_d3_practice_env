@@ -3,7 +3,7 @@ import { createApp, ref, onMounted } from "vue";
 // import {select, geoOrthographic, geoPath, json, geoGraticule, timer} from "d3";
 import * as d3 from "d3";
 import { feature, mesh } from "topojson";
-import { eulerAngles } from "./js/mathFunctions";
+// import { eulerAngles } from "./js/mathFunctions";
 import { Vector_snake } from "./js/snake";
 // import earthDiagram from "./js/earthDiagram";
 import axios from "axios";
@@ -39,29 +39,44 @@ const path = d3.geoPath().projection(projection);
 // const canvas = d3.select("#pracitce").attr("width", width).attr("height", height);
 // console.log(canvas);
 // console.log(canvas.node());
+let long = d3.range(0, 360, 2.5);
+console.log("long", long, long.length);
+let lat = d3.range(90, -90, -2.5);
+lat.push(-90);
+console.log("lat", lat, lat.length);
 const params = {
     canvas: canvas.node(),
     data: {
         headers: {
-            dx: width / n_tiles,
-            dy: height / n_tiles,
-            nx: n_tiles,
-            ny: n_tiles
+            dx: width / long.length,
+            dy: height / lat.length,
+            nx: long.length,
+            ny: lat.length,
+            // dx: width / n_tiles,
+            // dy: height / n_tiles,
+            // nx: n_tiles,
+            // ny: n_tiles,
+            x0: 0.0,
+            y0: 90.0,
         },
         // Math.pow(number, n) 為 number 的 n次方
         // d3.range(start, stop, step) 從 start 以 step 為間隔到 stop
         // console.log(d3.range(0, 4, 1));
         // d3.map 將陣列轉乘物件，這邊將 d3.range 產生的 0~323作為 index,
         // 賦予 -1 或 1 的值
-        u: d3.range(Math.pow(n_tiles,2)).map(()=>{ return Math.random() < 0.5 ? -1 : 1;}),
-        v: d3.range(Math.pow(n_tiles, 2)).map((d)=>{ return d/n_tiles < n_tiles/2 ? -1 : 1;})
+        //u: d3.range(Math.pow(n_tiles,2)).map(()=>{ return Math.random() < 0.5 ? -1 : 1;}),
+        //v: d3.range(Math.pow(n_tiles, 2)).map((d)=>{ return d/n_tiles < n_tiles/2 ? -1 : 1;})
+        u: d3.range(long.length*lat.length).map(()=>{ return Math.random() < 0.5 ? -1 : 1;}),
+        v: d3.range(long.length*lat.length).map((d)=>{ return d/n_tiles < n_tiles/2 ? -1 : 1;})
     },
 };
-console.log(params.canvas);
+
+// console.log(params.canvas);
 console.log(params.data);
+// console.log(params);
 // snake = new Snake(params);
 let test_vector = Vector_snake(params);
-console.log(test_vector);
+// console.log(test_vector);
 // test_vector.start(
 //     [[0,0], [width, height]]
 // );
@@ -138,8 +153,22 @@ function start_animation(grid, bounds, geo_data){
         let _x = Math.random() * bounds[1][0],
             _y = Math.random() * bounds[1][1],
             __data__ = grid.interpolate(_x, _y);
+        let __coord = projection.invert([_x, _y]),
+            __coord_data = grid.interpolate(__coord[0], __coord[1]);
+        // console.log("x y ", _x, _y);
+        // console.log("x y ", __data__);
+        // console.log("coord", __coord);
+        // console.log("coord", __coord_data);
         if (isValue(__data__)) {
             particles.push({
+                // x: __coord_data[0],
+                // y: __coord_data[1],
+                // m: __coord_data[2],
+                // age: Math.floor(Math.random() * MAX_PARTICLE_AGE),
+                // xt: __coord[0] - __coord_data[0],
+                // xy: __coord[1] - __coord_data[1],
+                // sx: __coord[0],
+                // sy: __coord[1]
                 x: __data__[0],
                 y: __data__[1],
                 m: __data__[2],
@@ -147,7 +176,7 @@ function start_animation(grid, bounds, geo_data){
                 xt: _x - __data__[0],
                 xy: _y - __data__[1],
                 sx: _x,
-                sy: _y
+                sy: _y,
             });
         }
     }
