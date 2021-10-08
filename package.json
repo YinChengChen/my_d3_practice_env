@@ -34,10 +34,11 @@
     "webpack-dev-server": "^3.11.2"
   },
   "dependencies": {
-    "@popperjs/core": "^2.9.3",
+    "@popperjs/core": "^2.10.2",
     "axios": "^0.21.1",
     "bootstrap": "^5.0.2",
     "d3": "^7.0.1",
+    "fs": "0.0.1-security",
     "topojson": "^3.0.2",
     "vue": "^3.1.5"
   }

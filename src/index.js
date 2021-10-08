@@ -1,263 +1,353 @@
 import "./scss/all.scss";
-import myImage from "./images/world.topo.bathy.200401.3x5400x2700.jpg";
-import { main, initShaderProgram } from "./js/wegGLfunction";
-// import img from "file-loader";
-// import { createApp, ref, onMounted} from "vue";
-// import {select, geoOrthographic, geoPath, json, geoGraticule, timer} from "d3";
-// import * as d3 from "d3";
-// import {feature} from "topojson";
-// import { eulerAngles } from "./js/mathFunctions";
-// import earthDiagram from "./js/earthDiagram";
-// import axios from "axios";
+// import myImage from "./images/world.topo.bathy.200401.3x5400x2700.jpg";
+// import { main, initShaderProgram } from "./js/wegGLfunction";
+import { createApp} from "vue";
+// import * as fs from "fs";
+// 這行把在 data 裡的資料綁近來
+require.context("./data/", true, /^.*/);
+import { offcanvas } from "bootstrap";
+import axios from "axios";
+import { Legend } from "./js/legend";
+import { setHeight, wind_color_scale_accurate } from "./js/otherTool";
+import * as d3 from "d3";
+import { feature } from "topojson";
+import { createCanvas, initProgram, renderOverlay, drawScene, start_wind_animation, to_radians } from "./js/webgl_functions";
+import { params, vector_snake, longlatlist, wind_overlay_data } from "./js/builder";
+import { advance_particle, generate_particles, get_radius_and_center } from "./js/particles";
+// import fetch from "node-fetch";
 
-// Start 加油
-// 測試瀏覽器是否有支援 webgl edge 有支援
-const gl = main();
-// console.log(gl);
-// 呼叫初始化 shader program 來建立 shader program
-const vsSource = `
-    attribute vec4 aVertexPosition;
-    uniform mat4 uModelViewMatrix;
-    uniform mat4 uProjectionMatrix;
+// console.log(data);
+const app = createApp({
+    data(){
+        return {
+            // 測試
+            text: "My New Earth",
+            // Grid 相關
+            grid_data:{
+                grid_size: [10, 10],
+                show_grid: true,
+            },
+            // data 相關
+            mapData: '',
+            overlayData: '',
+            vectorData: '',
+            // image 相關
+            vector_overlay: '',
+            // Colorbar 相關
+            colorbar_max_value: 200,
+            colorbar_units: "Wind Speed (m/s)",
+            // Earth 相關
+            earthInfo: {
+                svg_element: '',
+                width: '',
+                height: '',
+                projection: '',
+                path: '',
+            },
+            // Rotation 相關
+            automatic_rotation: false,
+            rotation_speed: 0.005,
+            manual_rotation_angle: [0, 0, 0],
+            // Map 相關
+            mapInfo: {
+                map_element: '',
+                foreignBody: '',
+                overlay_canvas: '',
+                gl_canvas: '',
+                gl_program: '',
+                vector_canvas: '',
+            },
+            // 其餘參數
+            init_longitude: 0,
+            sphere: {
+                type: "Sphere"
+            },
 
-    void main(){
-        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-    }
-`;
-
-const fsSource = `
-    void main(){
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-`;
-
-const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
-
-// 找到 WebGL 生成出的位置。
-// vertex shader 從 buffer 得到下一個值並傳入到 attribute。 Uniform 則像是 Javascript 的全域變數。每次迭代，他們的值不會改變。為了之後方便，我們將 shader 程式與 attribute 和 uniform 存放在同一個物件中
-const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+            // 向量動畫 相關
+            vector_animation_play: false,
+            show_vector_animation: true,
+            vector_frame: '',
+            vector_settings: {
+                alpha_decay: 0.95,
+                particles_travel: 2000,
+                number_of_particles: 3500,
+                max_age_of_particles: 35,
+            },
+        };
     },
-    uniformLocations: {
-        projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-        modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-    }
-};
+    methods: {
+        //For Data
+        async getMapData(url){
+            await axios.get(url).then((response) => {
+                this.mapData = response.data;
+            });
+        },
+        async getOverlayData(url){
+            await axios.get(url, {
+                baseURL: window.location.origin
+            }).then((response) => {
+                this.overlayData = response.data;
+            });
+        },
+        testButton(){
+            console.log("click");
+        },
+        //For colorbar
+        setLegend(){
+            const overlay_scale = wind_color_scale_accurate(this.colorbar_max_value);
+            let legend = Legend(overlay_scale, {
+                title: this.colorbar_units
+            });
+            let legend_svg = d3.select("#legend").attr("width", 400).attr("height", 100);
+            legend_svg.node().appendChild(legend);
+        },
+        //For earth
+        setEarthInfo(){
+            this.earthInfo.svg_element = d3.select("#earth");
+            this.earthInfo.projection = d3.geoOrthographic().precision(0.1).rotate([-this.init_longitude, 0]);
+            this.earthInfo.width = this.earthInfo.svg_element.node().getBoundingClientRect().width;
+            this.earthInfo.height = setHeight(this.earthInfo.projection, this.earthInfo.width, this.sphere);
+            this.earthInfo.path = d3.geoPath(this.earthInfo.projection);
+        },
+        // 這邊單獨拆出 map element 創立
+        createMapElement(){
+            // http://tutorials.jenkov.com/svg/svg-viewport-view-box.html 置中
+            this.mapInfo.map_element = d3.create("svg").attr("viewBox", [0, 0, this.earthInfo.width, this.earthInfo.height]).attr("fill", "black").attr("preserveAspectRatio", "xMidYMid");
+        },
+        drawGraticule(){
+            this.earthInfo.projection.fitSize([this.earthInfo.width, this.earthInfo.height], d3.geoGraticule10());
+            let graticule = d3.geoGraticule().step(this.grid_data.grid_size);
+            this.mapInfo.map_element.append("path").datum(graticule).attr("class", "graticule").attr("d", this.earthInfo.path).style("stroke", "#ffffff").attr("stroke-width", 1).style("fill", "none");
+        },
+        drawMap(){
+            // let mapData = this.mapData;
+            let land_coastline = feature(this.mapData, this.mapData.objects.countries).features;
+            this.mapInfo.map_element.selectAll(".segment").data(land_coastline)
+            .enter().append("path").attr("class", "segment").attr("d", this.earthInfo.path).style("stroke", "#ffffff").attr("stroke-width", 1).attr("fill", "none");
+        },
+        createForeignObject(){
+            // 東西先在這邊建，計算在另一個 function
+            const foreignObject = this.mapInfo.map_element.append("foreignObject").attr("x", 0).attr("y", 0).attr("width", this.earthInfo.width).attr("height", this.earthInfo.height);
+            this.mapInfo.foreignBody = foreignObject.append("xhtml:body").attr("margin", "0px").attr("padding", "0px").attr("background-color", "none").attr("width", this.earthInfo.width + "px").attr("height", this.earthInfo.height + "px");
+            this.mapInfo.overlay_canvas = createCanvas(this.earthInfo.width, this.earthInfo.height, "canvas-overlay");
+            this.mapInfo.vector_canvas = createCanvas(this.earthInfo.width, this.earthInfo.height, "canvas-particles");
+        },
+        async initOverlay(){
+            const gl = this.mapInfo.overlay_canvas.getContext("webgl");
+            // gl = gl;
+            if (gl === null){
+                alert("This browser doesn't support webgl");
+                return;
+            }
+            this.mapInfo.foreignBody.node().appendChild(gl.canvas);
+            const program = initProgram(gl);
+            // this.mapInfo.gl_program = programInfo;
+            // const wind_overlay = this.createVectorOverlay();
+            this.vectorData = this.createVectorOverlay();
+            await this.loadDataToCanvas(this.vectorData.overlay_data);
+            renderOverlay(gl, this.vector_overlay, program);
+            // let rotate= [0, 0];
+            let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
+            // console.log(current_rotation);
+            drawScene(gl, program, [current_rotation[0], current_rotation[1]]);
 
-// shader 是在 GPU上可以執行的 FUNCTION
-// 兩種 : vertex shader, fragment shader
-// 每次 vertex shader 給 gl_Position 1到3個值的時候，它會分別畫出點、線、三角形。
+            return {
+                gl_canvas: gl,
+                gl_program: program,
+            };
+        },
+        initVector(){
+            let context_wind_particles = this.mapInfo.vector_canvas.getContext("2d");
+            this.mapInfo.foreignBody.node().appendChild(context_wind_particles.canvas);
+            let selfs = this;
+            this.start_vector_animation(selfs, context_wind_particles);
+        },
+        start_vector_animation(selfs, context_wind_particles) {
+            let wait_time, animation_flag;
+            const frame_rate = 30;
+            const frame_rate_time = 1000 / frame_rate;
+            let particles = [];
+            const radius_and_center = get_radius_and_center(selfs.earthInfo.width, selfs.earthInfo.height);
+            particles = generate_particles(particles, selfs.vector_settings.number_of_particles, radius_and_center, selfs.earthInfo.width, selfs.earthInfo.height, selfs.earthInfo.projection, selfs.vector_settings.max_age_of_particles);
 
+            selfs.vector_animation_play = true;
+            function tick(t){
+                if(!selfs.vector_animation_play){
+                    return;
+                }
+                // 畫圖 先畫一張看看
+                context_wind_particles.beginPath();
+                context_wind_particles.strokeStyle = 'rgba(210, 210, 210, 0.7)';
+                particles.forEach((p) => advance_particle(p, context_wind_particles, radius_and_center, selfs.vector_settings.max_age_of_particles, selfs.vector_settings.particles_travel, selfs.earthInfo.projection, selfs.vectorData.vector_grid));
 
+                context_wind_particles.stroke();
+                context_wind_particles.globalAlpha = selfs.vector_settings.alpha_decay;
+                context_wind_particles.globalCompositeOperation = 'copy';
+                context_wind_particles.drawImage(context_wind_particles.canvas, 0, 0);
+                context_wind_particles.globalAlpha = 1.0;
+                context_wind_particles.globalCompositeOperation = "source-over";
 
+                wait_time = frame_rate_time - (performance.now() - t);
 
+                animation_flag = setTimeout(() =>{
+                    selfs.vector_frame = requestAnimationFrame(tick);
+                }, wait_time);
+            }
 
-// console.log("Hello World");
-// async function loadImageAsync(image_source){
+            tick(performance.now());
+        },
+        cancel_vector_animation(){
+            // this.show_vector_animation = false;
+            this.vector_animation_play = false;
+            cancelAnimationFrame(this.vector_frame);
+            let context_wind_particles = this.mapInfo.vector_canvas.getContext("2d");
+            context_wind_particles.clearRect(0, 0, this.earthInfo.width, this.earthInfo.height);
+        },
+        // 針對有兩個向量的資料，一個的需要另外寫
+        createVectorOverlay(){
+            const vector_params = params(this.overlayData);
+            const vector_grid = vector_snake(vector_params);
+            const [longlist, latlist] = longlatlist(vector_grid);
+            const overlay_data = wind_overlay_data(vector_grid, longlist, latlist, this.colorbar_max_value);
+            return {
+                vector_grid: vector_grid,
+                overlay_data: overlay_data,
+            };
+        },
+        async loadDataToCanvas(wind_overlay){
+            let overlay_width = 1024;
+            let overlay_height = 512;
+            let overlay_canvas = createCanvas(overlay_width, overlay_height, "overlay");
+            let ctx = overlay_canvas.getContext("2d");
+            let myImageData = new ImageData(wind_overlay, overlay_width, overlay_height);
+            await createImageBitmap(myImageData).then((result) => {
+                ctx.drawImage(result, 0, 0, overlay_width, overlay_height);
+                this.vector_overlay = ctx.canvas;
+            });
+        },
+        manual_rotation(){
+            this.cancel_vector_animation();
+            console.log("here");
+            this.earthInfo.projection.rotate(this.manual_rotation_angle);
+            let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
+            drawScene(this.mapInfo.gl_canvas, this.mapInfo.gl_program, [current_rotation[0], current_rotation[1]]);
+            this.mapInfo.map_element.selectAll(".segment").attr("d", this.earthInfo.path);
+            this.mapInfo.map_element.selectAll(".graticule").attr("d", this.earthInfo.path);
+        },
+        restart_vector_animation(){
+            if(this.automatic_rotation === false && this.show_vector_animation === true){
+                let context_wind_particles = this.mapInfo.vector_canvas.getContext("2d");
+                let selfs = this;
+                this.start_vector_animation(selfs, context_wind_particles);
+            }
+        },
+        // switchVectorAnimation(){
+        //     // console.log(this.show_vector_animation);
+        //     if(this.show_vector_animation){
+        //         this.cancel_vector_animation();
+        //     }else{
+        //         this.restart_vector_animation();
+        //     }
+        // },
+        switch_automatic_rotation(){
+            let earth_rotation = d3.timer((elasped) => {
+                let new_earth_rotating = [this.manual_rotation_angle[0] + elasped * this.rotation_speed, this.manual_rotation_angle[1], this.manual_rotation_angle[2]];
+                // this.show_vector_animation = false;
+                // this.isCheck_rotation = true;
+                this.cancel_vector_animation();
+                this.earthInfo.projection.rotate(new_earth_rotating);
+                let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
+                drawScene(this.mapInfo.gl_canvas, this.mapInfo.gl_program, [current_rotation[0], current_rotation[1]])
+                this.mapInfo.map_element.selectAll(".segment").attr("d", this.earthInfo.path);
+                this.mapInfo.map_element.selectAll(".graticule").attr("d", this.earthInfo.path);
+                if(!this.automatic_rotation){
+                    this.manual_rotation_angle = [Math.trunc(new_earth_rotating[0]), new_earth_rotating[1], new_earth_rotating[2]];
+                    // this.start_vector_animation();
+                    // this.isCheck_rotation = false;
+                    earth_rotation.stop();
+                }
+            });
+            // if(this.automatic_rotation){
+            //     this.restart_vector_animation();
+            // };
+        },
+    },
+    watch:{
+        colorbar_max_value(){
+            let legend_svg = d3.select("#legend").attr("width", 400).attr("height", 100);
+            legend_svg.selectChild().remove();
+            this.setLegend();
+            // 可能不考慮用 colorbar 的 range 而是用輸入的
+            // 目前還不會 loading 介面的製作
+            this.createVectorOverlay();
+            this.renderEarth();
+        },
+        grid_data:{
+            handler(){
+                this.mapInfo.map_element.selectAll(".graticule").remove();
+                if(this.grid_data.show_grid){
+                    this.drawGraticule();
+                }
+            },
+            deep: true,
+        },
+        // manual_rotation_angle: {
+        //     handler(){
+        //         // this.automatic_rotation = false;
+        //         // console.log(this.manual_rotation_angle);
+        //         this.cancel_vector_animation();
+        //         this.earthInfo.projection.rotate(this.manual_rotation_angle);
+        //         let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
+        //         drawScene(this.mapInfo.gl_canvas, this.mapInfo.gl_program, [current_rotation[0], current_rotation[1]]);
+        //         this.mapInfo.map_element.selectAll(".segment").attr("d", this.earthInfo.path);
+        //         this.mapInfo.map_element.selectAll(".graticule").attr("d", this.earthInfo.path);
+        //     },
+        //     deep: true,
+        // },
+        automatic_rotation(){
+            this.show_vector_animation = !this.automatic_rotation;
+            this.switch_automatic_rotation();
+            if(this.show_vector_animation === true && this.automatic_rotation === false){
+                console.log("show vector");
+                this.initVector();
+            }
+        },
 
-//     function getCanvas(img){
-//         // let new_canvas = document.createElement("canvas");
-//         let new_canvas = document.getElementById("testCanvas");
-//         new_canvas.width = img.width;
-//         new_canvas.height = img.height;
-//         const context = new_canvas.getContext("2d");
-//         context.drawImage(img, 0, 0, img.width, img.height);
-//         console.log("here");
-//         return context.canvas;
-//     }
+        // manual_rotation_angle:{
+        //     handler(){
+        //         this.cancel_vector_animation();
+        //         this.manual_rotation();
 
-//     return new Promise(function(resolve, reject){
-//         const image = new Image();
+        //         if(!this.show_vector_animation && !this.automatic_rotation){
+        //             console.log("go here?");
+        //             console.log(this.show_vector_animation, this.automatic_rotation, this.isCheck_rotation);
+        //         }
+        //     },
+        //     deep: true
+        // },
+        // vector_settings: {
+        //     handler(){
+        //         this.cancel_vector_animation();
+        //     },
+        //     deep: true
+        // },
+    },
+    async mounted() {
+        await this.getMapData("https://unpkg.com/world-atlas@1/world/110m.json");
+        await this.getOverlayData("current-wind-surface-level-gfs-1.0.json");
+        this.setLegend();
+        this.setEarthInfo();
 
-//         image.onload = function(){
-//             resolve(getCanvas(image));
-//         };
-
-//         image.onerror = function(){
-//             reject(new Error('Could not load image'));
-//         };
-//         image.src = image_source;
-
-//     });
-// }
-
-// // let mySvg = document.getElementById("mySvg");
-// let mySvg = d3.select("#mySvg");
-// console.log(mySvg);
-// loadImageAsync(myImage).then((response) =>{
-//     // return response;
-//     mySvg.node().appendChild(response);
-// });
-
-
-// let canvas = document.getElementById("myCanvas");
-// let svg_element = document.getElementById("mySvg");
-// canvas.width = 900;
-// canvas.height = 900;
-// // canvas.style = "background-color: #ff0000";
-// let image = new Image();
-// image.src = myImage;
-// // let ctxcan = '';
-// image.onload = function(){
-//     const new_canvas = document.getElementById("testCanvas");
-//     // const new_canvas = document.createElement("canvas");
-//     new_canvas.width = 4096;
-//     new_canvas.height = 2048;
-//     const context = new_canvas.getContext("2d");
-//     context.drawImage(image, 0, 0, 4096, 2048);
-//     // ctxcan = context.canvas;
-//     // console.log(ctxcan);
-//     // return  context.canvas;
-// };
-
-
-
-
-// const app = createApp({
-//     data(){
-//         return {
-//             earth_data: {
-//                 showGrid: true,
-//                 rotate: false,
-//                 rotate_setting: {
-//                     speed: 0.005,
-//                     verticalTilt: -30,
-//                     horizontalTilt: 0
-//                 },
-//             },
-//             isRotate: false,
-//             text: "Hello Earth",
-//             grid_step: [10, 10],
-//             scale_ratio: 2.5,
-//             wheel_value: 0,
-//             earth_id: "#earth",
-//             earth_width: null,
-//             earth_height: null,
-//             map_url: "https://unpkg.com/world-atlas@1/world/110m.json",
-//             worldData: {},
-//             svg_element: {
-//                 svg: {},
-//                 projection: {},
-//                 path: {},
-//                 scale_size: null,
-//             },
-//             isDrag: false,
-//             origin_position: null,
-//             new_position: null,
-//             o0: null,
-//             earth_rotating:[0,0,0],
-//         };
-//     },
-//     methods:{
-//         getSvgSize(){
-//             this.earth_height = this.$refs.earth_svg.clientHeight;
-//             this.earth_width = this.$refs.earth_svg.clientWidth;
-//         },
-//         setGlobe(){
-//             // 初始寫入圖片資訊到 vue
-//             this.svg_element.svg = d3.select(this.earth_id);
-//             // 設定縮放地球大小，讓 svg 知道 earth 可以設多大
-//             this.svg_element.scale_size = Math.min(this.earth_width, this.earth_height) / this.scale_ratio;
-//             // 設定地球投影置中與球大小
-//             this.svg_element.projection = d3.geoOrthographic().scale(this.svg_element.scale_size).translate([this.earth_width/2, this.earth_height/2]);
-//             this.svg_element.path = d3.geoPath().projection(this.svg_element.projection);
-//         },
-//         drawMap(){
-//             let mapData = this.worldData.data;
-//             this.svg_element.svg.selectAll(".segment").data(feature(mapData, mapData.objects.countries).features)
-//             .enter().append("path").attr("class", "segment").attr("d", this.svg_element.path).style("stroke", "#ffffff")
-//             .style("stroke-width", "1px").style("fill", "none");
-//         },
-//         drawGraticule(){
-//             let graticule = d3.geoGraticule().step(this.grid_step);
-//             this.svg_element.svg.append("path").datum(graticule).attr("class", "graticule").attr("d", this.svg_element.path).style("stroke", "#999999").style("strok_width", "1px").style("fill", "none");
-//         },
-//         onWheel(event){
-//             if(event.deltaY < 0){
-//                 this.scale_ratio -= 0.125;
-//             }else{
-//                 this.scale_ratio += 0.125;
-//             }
-//         },
-//         mousedown(event){
-//            this.isDrag = true;
-//         //    console.log(eulerAngles([80, 75], [30, 50], [1, 20 ,54]));
-//         },
-//         mousemove(event){
-//             if (this.isDrag){
-//             }
-//         },
-//         mouseup(){
-//             this.isDrag = false;
-//             this.svg_element.svg.selectAll(".point").remove();
-//         },
-//     },
-//     computed:{
-
-
-//     },
-//     watch:{
-//         earth_data:{
-//             // 控制格點出現
-//             handler(){
-//                 if (this.earth_data.showGrid){
-//                     this.drawGraticule();
-//                 }else{
-//                     this.svg_element.svg.selectAll(".graticule").remove();
-//                 }
-//             },
-//             deep: true
-//         },
-//         grid_step:{
-//             handler(){
-//                 // 偵測格點改變
-//                 if(this.earth_data.showGrid){
-//                     this.svg_element.svg.selectAll(".graticule").remove();
-//                     this.drawGraticule();
-//                 }
-//             },
-//             deep: true
-//         },
-//         scale_ratio(){
-//             this.svg_element.svg.selectAll("*").remove();
-//             this.setGlobe();
-//             this.drawMap();
-//             if (this.earth_data.showGrid){
-//                 this.drawGraticule();
-//             }
-//         },
-//         earth_rotating:{
-//             handler(){
-//                 this.svg_element.projection.rotate(this.earth_rotating);
-//                 this.svg_element.svg.selectAll("path").attr("d", this.svg_element.path);
-//             },
-//             deep: true
-//         },
-//         isRotate(){
-//             console.log(this.isRotate);
-//             let earth_rotation = d3.timer((elasped)=>{
-//                 let new_earth_rotaing = [this.earth_rotating[0] + elasped * 0.005, this.earth_rotating[1], this.earth_rotating[2]];
-//                 this.svg_element.projection.rotate(new_earth_rotaing);
-//                 this.svg_element.svg.selectAll("path").attr("d", this.svg_element.path);
-//                 if (!this.isRotate) {
-//                     this.earth_rotating = new_earth_rotaing;
-//                     earth_rotation.stop();
-//                 }
-//             });
-//         }
-//     },
-//     mounted() {
-//         axios.get(this.map_url).then((response) => {
-//             this.worldData = response;
-//             this.getSvgSize();
-//             this.setGlobe();
-//             if (this.earth_data.showGrid){
-//                 this.drawGraticule();
-//             }
-//             this.drawMap();
-//         });
-//     },
-// });
-// app.mount("#app");
+        await this.createMapElement();
+        this.drawGraticule();
+        this.drawMap();
+        this.createForeignObject();
+        const gl_data = await this.initOverlay();
+        this.initVector();
+        // console.log(gl_data);
+        this.mapInfo.gl_canvas = gl_data.gl_canvas;
+        this.mapInfo.gl_program = gl_data.gl_program;
+        this.earthInfo.svg_element.node().append(this.mapInfo.map_element.node());
+    },
+});
+app.mount("#app");

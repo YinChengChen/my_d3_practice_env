@@ -57,6 +57,17 @@ module.exports = {
                         }
                     }
                 ]
+            },{
+                type: "javascript/auto",
+                test: /\.json$/,
+                use:[
+                    {
+                        loader: "file-loader",
+                        options: {
+                            name: '[name].[ext]',
+                        }
+                    }
+                ]
             }
         ]
     },
@@ -86,6 +97,6 @@ module.exports = {
     devServer: {
         contentBase: path.join(__dirname, "dist"),
         hot: true,
-        port: 9000,
+        port: 9042,
     }
 };
