@@ -34,6 +34,7 @@ const app = createApp({
             // image 相關
             vector_overlay: '',
             // Colorbar 相關
+            show_colorbar: true,
             colorbar_max_value: 200,
             colorbar_units: "Wind Speed (m/s)",
             // Earth 相關
@@ -88,9 +89,6 @@ const app = createApp({
             }).then((response) => {
                 this.overlayData = response.data;
             });
-        },
-        testButton(){
-            console.log("click");
         },
         //For colorbar
         setLegend(){
@@ -203,6 +201,12 @@ const app = createApp({
             let context_wind_particles = this.mapInfo.vector_canvas.getContext("2d");
             context_wind_particles.clearRect(0, 0, this.earthInfo.width, this.earthInfo.height);
         },
+         restart_vector_animation(){  
+            // this.show_vector_animation = true;         
+            let context_wind_particles = this.mapInfo.vector_canvas.getContext("2d");
+            let selfs = this;
+            this.start_vector_animation(selfs, context_wind_particles);            
+        },
         // 針對有兩個向量的資料，一個的需要另外寫
         createVectorOverlay(){
             const vector_params = params(this.overlayData);
@@ -226,21 +230,15 @@ const app = createApp({
             });
         },
         manual_rotation(){
-            this.cancel_vector_animation();
-            console.log("here");
+            this.show_vector_animation = false;
+            // this.cancel_vector_animation();
             this.earthInfo.projection.rotate(this.manual_rotation_angle);
             let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
             drawScene(this.mapInfo.gl_canvas, this.mapInfo.gl_program, [current_rotation[0], current_rotation[1]]);
             this.mapInfo.map_element.selectAll(".segment").attr("d", this.earthInfo.path);
             this.mapInfo.map_element.selectAll(".graticule").attr("d", this.earthInfo.path);
         },
-        restart_vector_animation(){
-            if(this.automatic_rotation === false && this.show_vector_animation === true){
-                let context_wind_particles = this.mapInfo.vector_canvas.getContext("2d");
-                let selfs = this;
-                this.start_vector_animation(selfs, context_wind_particles);
-            }
-        },
+       
         // switchVectorAnimation(){
         //     // console.log(this.show_vector_animation);
         //     if(this.show_vector_animation){
@@ -252,9 +250,8 @@ const app = createApp({
         switch_automatic_rotation(){
             let earth_rotation = d3.timer((elasped) => {
                 let new_earth_rotating = [this.manual_rotation_angle[0] + elasped * this.rotation_speed, this.manual_rotation_angle[1], this.manual_rotation_angle[2]];
-                // this.show_vector_animation = false;
-                // this.isCheck_rotation = true;
-                this.cancel_vector_animation();
+                // this.cancel_vector_animation();
+                this.show_vector_animation = false;
                 this.earthInfo.projection.rotate(new_earth_rotating);
                 let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
                 drawScene(this.mapInfo.gl_canvas, this.mapInfo.gl_program, [current_rotation[0], current_rotation[1]])
@@ -262,15 +259,18 @@ const app = createApp({
                 this.mapInfo.map_element.selectAll(".graticule").attr("d", this.earthInfo.path);
                 if(!this.automatic_rotation){
                     this.manual_rotation_angle = [Math.trunc(new_earth_rotating[0]), new_earth_rotating[1], new_earth_rotating[2]];
-                    // this.start_vector_animation();
-                    // this.isCheck_rotation = false;
-                    earth_rotation.stop();
+                    this.show_vector_animation = true;
+                    earth_rotation.stop();                    
                 }
             });
             // if(this.automatic_rotation){
             //     this.restart_vector_animation();
             // };
         },
+        keyhandler(){
+            console.log(event.key);
+            event.preventDefault();
+        }
     },
     watch:{
         colorbar_max_value(){
@@ -280,7 +280,9 @@ const app = createApp({
             // 可能不考慮用 colorbar 的 range 而是用輸入的
             // 目前還不會 loading 介面的製作
             this.createVectorOverlay();
-            this.renderEarth();
+            this.initOverlay();
+            this.initVector();
+            // this.renderEarth();
         },
         grid_data:{
             handler(){
@@ -291,46 +293,22 @@ const app = createApp({
             },
             deep: true,
         },
-        // manual_rotation_angle: {
-        //     handler(){
-        //         // this.automatic_rotation = false;
-        //         // console.log(this.manual_rotation_angle);
-        //         this.cancel_vector_animation();
-        //         this.earthInfo.projection.rotate(this.manual_rotation_angle);
-        //         let current_rotation = this.earthInfo.projection.rotate().map(x => to_radians(x));
-        //         drawScene(this.mapInfo.gl_canvas, this.mapInfo.gl_program, [current_rotation[0], current_rotation[1]]);
-        //         this.mapInfo.map_element.selectAll(".segment").attr("d", this.earthInfo.path);
-        //         this.mapInfo.map_element.selectAll(".graticule").attr("d", this.earthInfo.path);
-        //     },
-        //     deep: true,
-        // },
-        automatic_rotation(){
-            this.show_vector_animation = !this.automatic_rotation;
-            this.switch_automatic_rotation();
-            if(this.show_vector_animation === true && this.automatic_rotation === false){
-                console.log("show vector");
-                this.initVector();
+        show_vector_animation(){
+            // console.log("Vector animation", this.show_vector_animation);
+            if(this.show_vector_animation){
+                this.restart_vector_animation();
+            }else{
+                this.cancel_vector_animation();
             }
         },
-
-        // manual_rotation_angle:{
-        //     handler(){
-        //         this.cancel_vector_animation();
-        //         this.manual_rotation();
-
-        //         if(!this.show_vector_animation && !this.automatic_rotation){
-        //             console.log("go here?");
-        //             console.log(this.show_vector_animation, this.automatic_rotation, this.isCheck_rotation);
-        //         }
-        //     },
-        //     deep: true
-        // },
-        // vector_settings: {
-        //     handler(){
-        //         this.cancel_vector_animation();
-        //     },
-        //     deep: true
-        // },
+        show_colorbar(){
+            if(!this.show_colorbar){
+                let legend = d3.select("#legend").selectAll("*");
+                legend.node().remove();
+            }else{
+                this.setLegend();
+            }
+        }
     },
     async mounted() {
         await this.getMapData("https://unpkg.com/world-atlas@1/world/110m.json");
@@ -348,6 +326,17 @@ const app = createApp({
         this.mapInfo.gl_canvas = gl_data.gl_canvas;
         this.mapInfo.gl_program = gl_data.gl_program;
         this.earthInfo.svg_element.node().append(this.mapInfo.map_element.node());
+        // 全屏keycode 偵測
+        window.addEventListener("keydown", (e) =>{
+            // console.log(e.code);
+            if(e.code === "KeyR"){
+                this.automatic_rotation = !this.automatic_rotation;
+                this.switch_automatic_rotation();
+            }else{
+                return;
+            }
+            e.preventDefault();
+        });
     },
 });
 app.mount("#app");
