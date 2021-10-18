@@ -23,18 +23,23 @@
           <div class="offcanvas-body pt-2">
             <ul class="list-unstyled">
               <li>
+
+              </li>
+              <li>
                 <ul class="list-unstyled">
                   <li class="form-check fs-4">
                     <label class="form-check-label" for="showGrid">
                       Grid
                     </label>
-                    <input class="form-check-input" type="checkbox" value="" id="showGrid" v-model="grid_data.show_grid">
+                    <input class="form-check-input" type="checkbox" value="" id="showGrid"
+                      v-model="grid_data.show_grid">
                   </li>
                   <li class="container px-0 pt-2 pb-2">
                     <ul class="list-unstyled row align-items-center">
                       <li class="col-8 d-flex align-items-center justify-content-between" title="set x grid size">
                         <label for="x_grid">X Grid</label>
-                        <input type="range" name="x_grid" id="x_grid" min="0" max="20" step="2.5" v-model.number="grid_data.grid_size[0]">
+                        <input type="range" name="x_grid" id="x_grid" min="0" max="20" step="2.5"
+                          v-model.number="grid_data.grid_size[0]">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ grid_data.grid_size[0] }}</span>
@@ -45,7 +50,8 @@
                     <ul class="list-unstyled row align-items-center">
                       <li class="col-8 d-flex align-items-center justify-content-between" title="set y grid size">
                         <label for="y_grid">Y Grid</label>
-                        <input type="range" name="y_grid" id="y_grid" min="0" max="20" step="2.5" v-model.number="grid_data.grid_size[1]">
+                        <input type="range" name="y_grid" id="y_grid" min="0" max="20" step="2.5"
+                          v-model.number="grid_data.grid_size[1]">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ grid_data.grid_size[1] }}</span>
@@ -60,13 +66,16 @@
                     <label class="form-check-label" for="showRotation">
                       Rotation
                     </label>
-                    <input class="form-check-input" type="checkbox" value="" id="showRotation" v-model="automatic_rotation" @click="switch_automatic_rotation()">
+                    <input class="form-check-input" type="checkbox" value="" id="showRotation"
+                      v-model="automatic_rotation" @click="switch_automatic_rotation()">
                   </li>
                   <li class="container px-0 pt-2 pb-2">
                     <ul class="list-unstyled row align-items-center">
                       <li class="col-8 d-flex align-items-center justify-content-between" title="(East)">
                         <label for="horizontal_rotation">Horizontal</label>
-                        <input type="range" name="horizontal_rotation" id="horizontal_rotation" min="-180" max="180" step="1" v-model.number="manual_rotation_angle[0]" @input="manual_rotation()" @change="show_vector_animation = true">
+                        <input type="range" name="horizontal_rotation" id="horizontal_rotation" min="-180" max="180"
+                          step="1" v-model.number="manual_rotation_angle[0]" @input="manual_rotation()"
+                          @change="show_vector_animation = true">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ manual_rotation_angle[0] }}</span>
@@ -77,7 +86,9 @@
                     <ul class="list-unstyled row align-items-center">
                       <li class="col-8 d-flex align-items-center justify-content-between" title="(North)">
                         <label for="vertical">Vertical</label>
-                        <input type="range" name="vertical" id="vertical" min="-180" max="180" step="1" v-model.number="manual_rotation_angle[1]" @input="manual_rotation()" @change="show_vector_animation = true">
+                        <input type="range" name="vertical" id="vertical" min="-180" max="180" step="1"
+                          v-model.number="manual_rotation_angle[1]" @input="manual_rotation()"
+                          @change="show_vector_animation = true">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ manual_rotation_angle[1] }}</span>
@@ -92,13 +103,17 @@
                     <label class="form-check-label" for="showVectorAnimation">
                       Vector
                     </label>
-                    <input class="form-check-input" type="checkbox" value="" id="showVectorAnimation" v-model="show_vector_animation">
+                    <input class="form-check-input" type="checkbox" value="" id="showVectorAnimation"
+                      v-model="show_vector_animation">
                   </li>
                   <li class="container px-0 pt-2 pb-2">
                     <ul class="list-unstyled row align-items-center">
-                      <li class="col-8 d-flex align-items-center justify-content-between" title="Determine how fast the particle's trace decays">
+                      <li class="col-8 d-flex align-items-center justify-content-between"
+                        title="Determine how fast the particle's trace decays">
                         <label for="alpha_decay">Trace Decays</label>
-                        <input type="range" name="alpha_decay" id="alpha_decay" min="0.8" max="1.0" step="0.01" v-model.number="vector_settings.alpha_decay" @input="show_vector_animation = false" @change="show_vector_animation = true">
+                        <input type="range" name="alpha_decay" id="alpha_decay" min="0.8" max="1.0" step="0.01"
+                          v-model.number="vector_settings.alpha_decay" @input="show_vector_animation = false"
+                          @change="show_vector_animation = true">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ vector_settings.alpha_decay }}</span>
@@ -107,9 +122,12 @@
                   </li>
                   <li class="container px-0 pb-2">
                     <ul class="list-unstyled row align-items-center">
-                      <li class="col-8 d-flex align-items-center justify-content-between" title="Determine how fast particles travel">
+                      <li class="col-8 d-flex align-items-center justify-content-between"
+                        title="Determine how fast particles travel">
                         <label for="particles_travel">Speed</label>
-                        <input type="range" name="particles_travel" id="particles_travel" min="0" max="4000" step="500" v-model.number="vector_settings.particles_travel" @input="show_vector_animation = false" @change="show_vector_animation = true">
+                        <input type="range" name="particles_travel" id="particles_travel" min="0" max="4000" step="500"
+                          v-model.number="vector_settings.particles_travel" @input="show_vector_animation = false"
+                          @change="show_vector_animation = true">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ vector_settings.particles_travel }}</span>
@@ -118,9 +136,12 @@
                   </li>
                   <li class="container px-0 pb-2">
                     <ul class="list-unstyled row align-items-center">
-                      <li class="col-8 d-flex align-items-center justify-content-between" title="Determine the number of particles">
+                      <li class="col-8 d-flex align-items-center justify-content-between"
+                        title="Determine the number of particles">
                         <label for="number_of_particles">Number</label>
-                        <input type="range" name="number_of_particles" id="number_of_particles" min="0" max="5000" step="500" v-model.number="vector_settings.number_of_particles" @input="show_vector_animation = false" @change="show_vector_animation = true">
+                        <input type="range" name="number_of_particles" id="number_of_particles" min="0" max="5000"
+                          step="500" v-model.number="vector_settings.number_of_particles"
+                          @input="show_vector_animation = false" @change="show_vector_animation = true">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ vector_settings.number_of_particles }}</span>
@@ -129,9 +150,12 @@
                   </li>
                   <li class="container px-0 pb-2">
                     <ul class="list-unstyled row align-items-center">
-                      <li class="col-8 d-flex align-items-center justify-content-between" title="Define max age of particles">
+                      <li class="col-8 d-flex align-items-center justify-content-between"
+                        title="Define max age of particles">
                         <label for="max_age_of_particles">Max Age</label>
-                        <input type="range" name="max_age_of_particles" id="max_age_of_particles" min="10" max="100" step="5" v-model.number="vector_settings.max_age_of_particles" @input="show_vector_animation = false" @change="show_vector_animation = true">
+                        <input type="range" name="max_age_of_particles" id="max_age_of_particles" min="10" max="100"
+                          step="5" v-model.number="vector_settings.max_age_of_particles"
+                          @input="show_vector_animation = false" @change="show_vector_animation = true">
                       </li>
                       <li class="col-4 d-flex align-items-center">
                         <span class="badge bg-secondary">{{ vector_settings.max_age_of_particles }}</span>
@@ -152,19 +176,41 @@
                     <ul class="list-unstyled row align-items-center">
                       <li class="col d-flex align-items-center justify-content-between" title="Set color bar maximum">
                         <label for="colorbar_max_value">Max Value</label>
-                        <input type="text" name="colorbar_max_value" id="colorbar_max_value" size="5" maxlength="5" v-model.lazy.number="colorbar_max_value">
+                        <input type="text" name="colorbar_max_value" id="colorbar_max_value" size="5" maxlength="5"
+                          v-model.lazy.number="colorbar_max_value">
                       </li>
                       <li class="col d-flex align-items-center">
                         <span class="badge bg-secondary">{{ colorbar_units }}</span>
                       </li>
                     </ul>
                   </li>
+                  <li class="container px-0 pt-2 pb-2">
+                    <ul class="list-unstyled row align-items-center">
+                      <li class="col-4 d-flex align-items-center justify-content-between" title="Set color bar maximum">
+                        <label for="setColorbarStyle">Style</label>
+                      </li>
+                      <li class="col-8 d-flex align-items-center">
+                        <select class="form-select bg-secondary" aria-label="colorbar style select"
+                          name="setColorBarStyle" id="setColorBarStyle" v-model="colorbar_view" @change="changeScale()">
+                          <option value="Sine">Sine</option>
+                          <option value="Viridis">Viridis</option>
+                          <option value="Turbo">Turbo</option>
+                          <option value="PiYG">PiYG</option>
+                          <option value="Sinebow">Sinebow</option>
+                          <option value="RdBu">RdBu</option>
+                        </select>
+                      </li>
+                    </ul>
+
+
+                  </li>
+
                 </ul>
               </li>
             </ul>
           </div>
         </div>
-        <svg class="w-100 h-100" id="earth" refs="earth_svg"></svg>      
+        <svg class="w-100 h-100" id="earth" refs="earth_svg"></svg>
         <div class="position-absolute bottom-0 end-0 text-info">
           <svg id="legend"></svg>
         </div>

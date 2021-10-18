@@ -1,3 +1,19 @@
-// body{
+$body-bg:                   #000000 !default;
+$body-color:                #f8f9fa !default;
+$body-text-align:           null !default;
+
+
+$primary:       #253C54 !default;
+$secondary:     #37597E !default;
+$success:       #6D86AF !default;
+$info:          #D7DBE4 !default;
+$light:         #9DA5BA !default;
 //     height: 100%;
 // }
+$font-size-base:              1rem !default;
+$h1-font-size:                $font-size-base * 2 !default;
+$h2-font-size:                $font-size-base * 1.75 !default;
+$h3-font-size:                $font-size-base * 1.5 !default;
+$h4-font-size:                $font-size-base * 1.25 !default;
+$h5-font-size:                $font-size-base !default;
+$h6-font-size:                $font-size-base * 0.75 !default;

@@ -3,49 +3,49 @@ import { wind_color_scale_accurate, isInt } from "./otherTool";
 export { params, vector_snake, longlatlist, wind_overlay_data, bilinear_interpolation };
 
 
-// function params(data) {
-//     const vector_products = {
-//         data: {
-//             headers: {
-//                 dx: data[0].header.dx,
-//                 dy: data[0].header.dy,
-//                 la1: data[0].header.la1,
-//                 la2: data[0].header.la2,
-//                 lo1: data[0].header.lo1,
-//                 lo2: data[0].header.lo2,
-//                 nx: data[0].header.nx,
-//                 ny: data[0].header.ny,
-//                 refTime: data[0].header.refTime,
-//                 unit: data[0].header.gridUnits
-//             },
-//             u: data[0].data,
-//             v: data[1].data,
-//         }
-//     };
-//     return vector_products;
-// }
 function params(data) {
     const vector_products = {
         data: {
             headers: {
-                dx: data.header.dx,
-                dy: data.header.dy,
-                la1: data.header.la1,
-                la2: data.header.la2,
-                lo1: data.header.lo1,
-                lo2: data.header.lo2,
-                nx: data.header.nx,
-                ny: data.header.ny,
-                refTime: data.header.refTime,
-                unit: data.header.unit
+                dx: data[0].header.dx,
+                dy: data[0].header.dy,
+                la1: data[0].header.la1,
+                la2: data[0].header.la2,
+                lo1: data[0].header.lo1,
+                lo2: data[0].header.lo2,
+                nx: data[0].header.nx,
+                ny: data[0].header.ny,
+                refTime: data[0].header.refTime,
+                unit: data[0].header.gridUnits
             },
-            u: data.data.u,
-            v: data.data.v,
+            u: data[0].data,
+            v: data[1].data,
         }
     };
-    // console.log(vector_products);
     return vector_products;
 }
+// function params(data) {
+//     const vector_products = {
+//         data: {
+//             headers: {
+//                 dx: data.header.dx,
+//                 dy: data.header.dy,
+//                 la1: data.header.la1,
+//                 la2: data.header.la2,
+//                 lo1: data.header.lo1,
+//                 lo2: data.header.lo2,
+//                 nx: data.header.nx,
+//                 ny: data.header.ny,
+//                 refTime: data.header.refTime,
+//                 unit: data.header.unit
+//             },
+//             u: data.data.u,
+//             v: data.data.v,
+//         }
+//     };
+//     // console.log(vector_products);
+//     return vector_products;
+// }
 
 function longlatlist(obj) {
     let longlist = [];
@@ -71,20 +71,7 @@ function vector_snake(params) {
         let u = params.data.u[i];
         let v = params.data.v[i];
         let wind_strength = Number(Math.sqrt(u * u + v * v).toFixed(2));
-        // 如果格點不是整數的
-        // if(!isInt(dx) || !isInt(dy)){
-        //     let ilong = Math.trunc(long);
-        //     let ilat = Math.trunc(lat);
-        //     if(!(ilong in grid)){
-        //         grid[ilong] = new Object();
-        //     }
-        //     grid[ilong][ilat] = {
-        //         u: u,
-        //         v: v,
-        //         wind_strength: wind_strength
-        //     };
-        // }else{
-        // // 格點為整數
+
         if (!(long in grid)) {
             grid[long] = new Object();
         }
@@ -96,7 +83,7 @@ function vector_snake(params) {
         // }
 
         // Create long, lat list
-        // console.log("Each :", long, lat);
+        console.log("Each :", long, lat);
         // go to next row
         // 從 long 0~180 同樣的 lat
         // 再從 long -179~0 同樣的 lat
@@ -145,7 +132,6 @@ function wind_overlay_data(vector_grid, longlist, latlist, colorbar_scale) {
             x = 0;
             y = y + 1;
         }
-        // console.log("Each ", x, y);
     }
     return overlay_array;
 }

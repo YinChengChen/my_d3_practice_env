@@ -1,6 +1,6 @@
 // 將遇到的 function 或 小元件不知怎分類的放這
-import { geoPath, scaleLinear, hsl, rgb, scaleSequential } from "d3";
-export { setHeight, wind_color_scale_accurate };
+import { geoPath, scaleLinear, hsl, rgb, scaleSequential, interpolateViridis, interpolateTurbo, interpolatePiYG, interpolateSinebow, interpolateRdBu } from "d3";
+export { setHeight, wind_color_scale_accurate, other_color_scale_accurate, isInt };
 
 function setHeight(projection, width, sphere){
     let [[x0, y0], [x1, y1]] = geoPath(projection.fitWidth(width, sphere)).bounds(sphere);
@@ -28,6 +28,7 @@ function interpolate_wind_sinebow(t) {
     if (t > end_of_sinebow_scale) {
         interpolate_color = hsl(end_of_sinebow_scale_color.h, end_of_sinebow_scale_color.s, l_scale(t)) + "";
     }
+    // console.log(interpolate_color);
     return interpolate_color;
     // const end_of_sine
 }
@@ -38,5 +39,26 @@ function sin2(t) {
 
 function wind_color_scale_accurate(max_value) {
     let scale = scaleSequential().domain([0, max_value]).interpolator(interpolate_wind_sinebow);
+    // let scale = scaleSequential().domain([0, max_value]).interpolator(interpolateViridis());
     return scale;
 };
+
+function other_color_scale_accurate(max_value, view_type){
+    let scale;
+    if(view_type === "Viridis"){
+        scale = scaleSequential(interpolateViridis).domain([0, max_value]);
+    }else if(view_type === "Turbo"){
+        scale = scaleSequential(interpolateTurbo).domain([0, max_value]);
+    } else if (view_type === "PiYG"){
+        scale = scaleSequential(interpolatePiYG).domain([0, max_value]);
+    } else if (view_type === "Sinebow"){
+        scale = scaleSequential(interpolateSinebow).domain([0, max_value]);
+    } else if(view_type === "RdBu"){
+        scale = scaleSequential(interpolateRdBu).domain([0, max_value]);
+    }
+    return scale;
+}
+
+function isInt(n){
+    return typeof n === 'number' && n % 1 == 0;
+}

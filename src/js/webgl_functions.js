@@ -1,4 +1,4 @@
-export { createCanvas, initProgram, isPowerOf2, renderOverlay, drawScene, start_wind_animation, to_radians };
+export { createCanvas, initProgram, isPowerOf2, renderOverlay, drawScene, start_wind_animation, to_radians, restartSceneScale };
 import { generate_particles, get_radius_and_center, advance_particle } from "./particles";
 const vsSource = `
     attribute vec2 a_vertex;
@@ -154,33 +154,33 @@ function renderOverlay(gl, image, programInfo) {
 
     gl.uniform2f(programInfo.u_translate, gl.canvas.width / 2, gl.canvas.height / 2);
     gl.uniform1f(programInfo.u_scale, gl.canvas.height / 2 - 1);
-    // let rotate = [0, 0];
-    // let then = 0;
-    // let selfs = this;
-    // 上層球球與下層地圖一起動有困難，rotate 座標不同的樣子
-    // this.earth_svg.projection.rotate(rotate);
-    // drawScene(rotate);
-    // requestAnimationFrame(calculateRotation);
-    // function calculateRotation(now) {
-    //     now *= 0.001;
-    //     let deltaTime = now - then;
-    //     let rotation = [deltaTime * 1000 * -0.0002 % (2 * Math.PI), Math.sin(deltaTime * 1000 * 0.0001) * 0.5];
-    //     // selfs.earth_svg.projection.rotate(rotation);
-    //     drawScene(rotation);
-
-    //     requestAnimationFrame(calculateRotation);
-    // }
-    // function drawScene(rotate_angle) {
-    //     gl.uniform2fv(programInfo.u_rotate, rotate_angle);
-    //     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    //     let primitiveType = gl.TRIANGLE_FAN;
-    //     gl.drawArrays(primitiveType, 0, 4);
-    // }
 }
 
 function drawScene(gl, programInfo, rotate_angle) {
     gl.uniform2fv(programInfo.u_rotate, rotate_angle);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    let primitiveType = gl.TRIANGLE_FAN;
+    gl.drawArrays(primitiveType, 0, 4);
+}
+
+function restartSceneScale(gl, programInfo, rotate_angle, radius_and_center, new_width, new_height){
+    // console.log("radius:", get_radius_and_center());
+    gl.useProgram(programInfo.shaderProgram);
+    gl.enableVertexAttribArray(programInfo.a_vertex);
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        programInfo.a_vertex, size, type, normalize, stride, offset
+    );
+
+    // gl.uniform2f(programInfo.u_translate, new_width / 2, new_height / 2);
+    gl.uniform1f(programInfo.u_scale, radius_and_center.r);
+    // gl.uniform1f(programInfo.u_scale, radius_and_center.r);
+    gl.uniform2fv(programInfo.u_rotate, rotate_angle);
+    // gl.viewport(0, 0, gl, new_height);
     let primitiveType = gl.TRIANGLE_FAN;
     gl.drawArrays(primitiveType, 0, 4);
 }
