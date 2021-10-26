@@ -1,6 +1,6 @@
 import { geoEquirectangular, geoGraticule10, select } from "d3";
 import { wind_color_scale_accurate, isInt } from "./otherTool";
-export { params, vector_snake, longlatlist, wind_overlay_data, bilinear_interpolation };
+export { params, params_overlay, vector_snake, vector_snake_overlay, longlatlist, wind_overlay_data, bilinear_interpolation };
 
 
 // function params(data) {
@@ -45,6 +45,27 @@ function params(data) {
     };
     // console.log(vector_products);
     return vector_products;
+}
+
+function params_overlay(data){
+    const overlay_products = {
+        data: {
+            headers: {
+                dx: data.header.dx,
+                dy: data.header.dy,
+                la1: data.header.la1,
+                la2: data.header.la2,
+                lo1: data.header.lo1,
+                lo2: data.header.lo2,
+                nx: data.header.nx,
+                ny: data.header.ny,
+                refTime: data.header.refTime,
+                unit: data.header.unit
+            },
+            o: data.data
+        }
+    };
+    return overlay_products;
 }
 
 function longlatlist(obj) {
@@ -101,6 +122,38 @@ function vector_snake(params) {
         // 從 long 0~180 同樣的 lat
         // 再從 long -179~0 同樣的 lat
         // 最後 === -1 就換下一個 lat
+        if (long === 180) {
+            long = -179;
+        } else if (long === -1) {
+            lat = lat - dy;
+            long = 0;
+        } else {
+            long = long + dx;
+            // lat = lat - dy;
+        }
+    }
+    grid[-180] = grid[180];
+    return grid;
+}
+
+function vector_snake_overlay(params){
+    let grid = new Object();
+    let lat = params.data.headers.la1;
+    let long = params.data.headers.lo1;
+    let dx = params.data.headers.dx;
+    let dy = params.data.headers.dy;
+
+    for (let i = 0; i < params.data.o.length; i++) {
+        // let u = params.data.u[i];
+        // let v = params.data.v[i];
+        let strength = params.data.o[i];
+        if (!(long in grid)) {
+            grid[long] = new Object();
+        }
+        grid[long][lat] = {
+           wind_strength: strength
+        };
+
         if (long === 180) {
             long = -179;
         } else if (long === -1) {

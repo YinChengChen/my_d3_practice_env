@@ -54,10 +54,12 @@ const fsSource = `
 
 function createCanvas(width, height, id) {
     const canvas = document.createElement("canvas");
+    // canvas.letf = 0;
+    // canvas.y = 0;
     canvas.width = width;
     canvas.height = height;
     canvas.id = id;
-    canvas.style = `position: absolute;`;
+    canvas.style = `position: absolute; top: 0; left: 0;`;
     // console.log(canvas);
     return canvas;
 }
