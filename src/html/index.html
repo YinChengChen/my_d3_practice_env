@@ -10,8 +10,35 @@
 
 <body>
   <div class="containr-fluid vh-100" id="app">
-    <button class="btn btn-secondary position-absolute top-0 start-0 mt-2 mx-2" type="button" data-bs-toggle="offcanvas"
-      data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Meun</button>
+    <div class="position-absolute top-0 start-0 mt-2 mx-2 d-flex flex-column">
+      <button class="btn btn-secondary mb-2" type="button" data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Meun</button>
+      <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+        Guide
+      </button>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-secondary">
+          <div class="modal-header">
+            <h2 class="modal-title" id="exampleModalLabel">User Guide</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h3>Step</h3>
+            <p>1. Select Year -> Month -> Day (If not select day, data will not update.)</p>
+            <p>2. Select Vector, Overlay, Height (default is 300 km)</p>
+            <h3>Notice</h3>
+            <p>Updating will take a few seconds. (The author still don't know how to set a spinner.)</p>
+          </div>
+          <!-- <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div> -->
+        </div>
+      </div>
+    </div>
     <div class="offcanvas offcanvas-start bg-primary" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1"
       id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
       <div class="offcanvas-header pb-0">
@@ -128,19 +155,22 @@
               <li class="container px-0 pt-2 pb-2">
                 <ul class="list-unstyled">
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation" value="rotate_type" v-model="layer_settings.animation_type">
+                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation" value="rotate_type"
+                      v-model="layer_settings.animation_type">
                     <label class="form-check-label" for="rotate_type">
                       Rotate
                     </label>
                   </li>
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forAnimation" id="rotationRight" value="vector_type" v-model="layer_settings.animation_type">
+                    <input class="form-check-input" type="radio" name="forAnimation" id="rotationRight"
+                      value="vector_type" v-model="layer_settings.animation_type">
                     <label class="form-check-label" for="type">
                       Vector
                     </label>
                   </li>
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation" value="none_type" v-model="layer_settings.animation_type">
+                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation" value="none_type"
+                      v-model="layer_settings.animation_type">
                     <label class="form-check-label" for="none_type">
                       None
                     </label>
@@ -160,13 +190,15 @@
               <li class="container px-0 pt-2 pb-2">
                 <ul class="list-unstyled">
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forDirection" id="rotationLeft" value="left" v-model="layer_settings.rotation_dec">
+                    <input class="form-check-input" type="radio" name="forDirection" id="rotationLeft" value="left"
+                      v-model="layer_settings.rotation_dec">
                     <label class="form-check-label" for="rotationLeft">
                       Left / West
                     </label>
                   </li>
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forDirection" id="rotationRight" value="right" v-model="layer_settings.rotation_dec">
+                    <input class="form-check-input" type="radio" name="forDirection" id="rotationRight" value="right"
+                      v-model="layer_settings.rotation_dec">
                     <label class="form-check-label" for="rotationRight">
                       Right / East
                     </label>
@@ -244,7 +276,8 @@
                 <label class="form-check-label" for="showVectorColorbar">
                   Vector Color Bar
                 </label>
-                <input class="form-check-input" type="checkbox" value="" id="showVectorColorbar" v-model="vector_show_colorbar">
+                <input class="form-check-input" type="checkbox" value="" id="showVectorColorbar"
+                  v-model="vector_show_colorbar">
               </li>
               <li class="container px-0 pt-2 pb-2">
                 <ul class="list-unstyled row align-items-center">
@@ -280,7 +313,8 @@
                 <label class="form-check-label" for="showOverlayColorbar">
                   Overlay Color Bar
                 </label>
-                <input class="form-check-input" type="checkbox" value="" id="showOverlayColorbar" v-model="overlay_show_colorbar">
+                <input class="form-check-input" type="checkbox" value="" id="showOverlayColorbar"
+                  v-model="overlay_show_colorbar">
               </li>
               <li class="container px-0 pt-2 pb-2">
                 <ul class="list-unstyled row align-items-center">
@@ -317,7 +351,13 @@
         </ul>
       </div>
     </div>
+    <div class="position-absolute end-0 top-0 mb-4 me-4">
+
+    </div>
     <div class="position-absolute bottom-0 end-0 text-info fs-3 mb-4 me-4">
+      <!-- <h2>Data</h2>
+      <p>{{ info.year }}/{{ info.month }}/{{ info.day }} {{ info.time }}:00 UT </p>
+      <p>Height: {{ info.height }} km</p> -->
       <div id="vector_legend" v-show="vector_show_colorbar">
       </div>
       <div id="overlay_legend" v-show="overlay_show_colorbar"></div>

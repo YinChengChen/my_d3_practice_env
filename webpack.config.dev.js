@@ -60,6 +60,7 @@ module.exports = {
             },{
                 type: "javascript/auto",
                 test: /\.json$/,
+                exclude: [path.resolve(__dirname, 'node_modules/axios/package.json')],
                 use:[
                     {
                         loader: "file-loader",

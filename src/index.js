@@ -24,8 +24,6 @@ import {versor} from "./js/versor_function";
 const app = createApp({
     data() {
         return {
-            // 測試
-            text: "test Earth",
             // Grid 相關
             grid_data: {
                 grid_size: [10, 10],
@@ -35,6 +33,7 @@ const app = createApp({
             year: '2019',
             month: '08',
             day: '01',
+            tt: '09',
             info: {
                 year: '',
                 month: '',
@@ -56,24 +55,18 @@ const app = createApp({
             hour: ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"],
             mapData: '',
             landData: '',
-            overlayData: '',
             vectorData: '',
-            // allData: {},
-            // image 相關
-            // vector_overlay: '',
             // Colorbar 相關
             vector_show_colorbar: true,
             vector_colorbar_setting: {
                 colorbar_max_value: 500,
                 colorbar_view: "Sine",
             },
-            // vector_colorbar_scale: "",
             overlay_show_colorbar: true,
             overlay_colorbar_setting: {
                 colorbar_max_value: 1,
                 colorbar_view: "Turbo",
             },
-            // overlay_colorbar_scale: "",
             // Earth 相關
             earthInfo: {},
             scale_ratio: 700,
@@ -83,7 +76,6 @@ const app = createApp({
             manual_rotation_angle: [0, 0, 0],
             overlay_frame: '',
             // 其餘參數
-            // init_longitude: 120,
             sphere: {
                 type: "Sphere"
             },
@@ -103,10 +95,8 @@ const app = createApp({
                 number_of_particles: 3500,
                 max_age_of_particles: 35,
             },
-            // vector_tmp_grid: "",
-            // 需要控制圖層的，通通放一起
             layer_settings: {
-                rotation_dec: "left", // 1 往左 -1 往右
+                rotation_dec: "left",
                 animation_type: "vector_type",
             },
         };
@@ -155,6 +145,13 @@ const app = createApp({
             this.info.height = event.target.value;
         },
         async init(){
+            let tmp_data = this.loadLocalStorageToInfo("info");
+            if(tmp_data !== null){
+                this.year = tmp_data.year;
+                this.month = tmp_data.month;
+                this.day = tmp_data.day;
+                this.tt = tmp_data.time;
+            }
             this.date_list = await this.getData("data_diary.json");
             this.mapData = await this.getData("https://unpkg.com/world-atlas@1/world/110m.json");
             this.landData = await this.getData("https://unpkg.com/world-atlas@2.0.2/land-50m.json");
@@ -164,6 +161,7 @@ const app = createApp({
             this.getAllDay(this.month);
             this.info.month = this.month;
             this.info.day = this.day;
+            this.info.time = this.tt;
             // For Vector ColorBar
             let vector_colorbar = this.setLegend(this.vector_colorbar_setting, "vector");
             // console.log(vector_colorbar);
@@ -364,6 +362,7 @@ const app = createApp({
         cancal_vector_animation(){
             this.vector_animation_play = false;
             cancelAnimationFrame(this.vector_frame);
+            clearTimeout(this.vector_frame);
             // console.log(this.vector_frame);
             let particles_layer = this.canvasInfo.vector.getContext("2d");
             particles_layer.clearRect(0, 0, this.earthInfo.width, this.earthInfo.height);
@@ -399,16 +398,33 @@ const app = createApp({
             this.automatic_rotation = false;
             this.manual_rotation_angle = this.earthInfo.projection.rotate();
             cancelAnimationFrame(this.overlay_frame);
-        }
+            clearTimeout(this.overlay_frame);
+        },
+        saveInfoToLocalStorage(data_name, data){
+            // console.log(localStorage.getItem("test"));
+            // console.log("save", data_name);
+            let tmp_data = JSON.stringify(data);
+            // console.log(tmp_data);
+            localStorage.setItem(data_name, tmp_data);
+        },
+        loadLocalStorageToInfo(data_name){
+            // console.log(localStorage.getItem(data_name));
+            let tmp_data = JSON.parse(localStorage.getItem(data_name));
+            // console.log(tmp_data);
+            return tmp_data;
+        },
     },
     watch: {
         year(){
             this.getAllMonth(this.year);
-            this.info.year = this.year;
+            // this.info.year = this.year;
         },
         month(){
             this.getAllDay(this.month);
-            this.info.month = this.month;
+            // this.info.month = this.month;
+        },
+        day(){
+            this.info.day = this.day;
         },
         grid_data:{
             handler(){
@@ -518,6 +534,7 @@ const app = createApp({
                 }));
 
                 d3.select("#earth").node().append(viewBox_svg.node());
+                this.saveInfoToLocalStorage("info", this.info);
             },
             deep: true
         },
@@ -544,9 +561,9 @@ const app = createApp({
                 if(this.layer_settings.animation_type === "rotate_type"){
                     this.cancal_vector_animation();
                     if(this.layer_settings.rotation_dec === "left"){
-                        this.start_automatic_rotation(1);
-                    }else{
                         this.start_automatic_rotation(-1);
+                    }else{
+                        this.start_automatic_rotation(1);
                     }
                 }else if(this.layer_settings.animation_type === "vector_type"){
                     this.cancel_overlay_animation();
@@ -559,53 +576,9 @@ const app = createApp({
             },
             deep: true,
         }
-        // layer_settings: {
-        //     handler(){
-        //         console.log(this.layer_settings);
-        //         this.layer_settings.show_vector_animation = false;
-        //         this.cancal_vector_animation();
-        //         if(this.layer_settings.automatic_rotation === true){
-        //             if(this.layer_settings.rotation_dec === "left"){
-        //                 this.start_automatic_rotation(1);
-        //             }else if (this.layer_settings.rotation_dec === "right"){
-        //                 this.start_automatic_rotation(-1);
-        //             }
-        //         }else if(this.layer_settings.automatic_rotation === false){
-        //             this.layer_settings.show_vector_animation = true;
-        //             this.cancel_overlay_animation();
-        //             let particles_layer = this.canvasInfo.vector.getContext("2d");
-        //             this.start_vector_animation(particles_layer, this.vectorData, this.layer_settings);
-        //         }
-        //         if(this.layer_settings.show_vector_animation === false){
-        //             return;
-        //         }else if(this.layer_settings.show_vector_animation === true){
-        //             let particles_layer = this.canvasInfo.vector.getContext("2d");
-        //             this.start_vector_animation(particles_layer, this.vectorData, this.layer_settings);
-        //         }
-        //     },
-        //     deep: true,
-        // }
-        // automatic_rotation(){
-        //     // console.log(this.automatic_rotation, this.manual_rotation_angle);
-        //     if(this.automatic_rotation){
-        //         this.show_vector_animation = false;
-        //         this.start_automatic_rotation();
-        //     }else{
-        //         this.show_vector_animation = true;
-        //         this.cancel_overlay_animation();
-        //     }
-        // },
-        // show_vector_animation(){
-        //     if(this.show_vector_animation){
-        //         let particles_layer = this.canvasInfo.vector.getContext("2d");
-        //         this.start_vector_animation(particles_layer, this.vectorData);
-        //     }else{
-        //         this.cancal_vector_animation();
-        //     }
-        // },
-
     },
     mounted() {
+
         this.init();
     },
 });
