@@ -24,23 +24,23 @@ export { params, params_overlay, vector_snake, vector_snake_overlay, longlatlist
 //     };
 //     return vector_products;
 // }
-function params(data) {
+function params(indata) {
     const vector_products = {
         data: {
             headers: {
-                dx: data.header.dx,
-                dy: data.header.dy,
-                la1: data.header.la1,
-                la2: data.header.la2,
-                lo1: data.header.lo1,
-                lo2: data.header.lo2,
-                nx: data.header.nx,
-                ny: data.header.ny,
-                refTime: data.header.refTime,
-                unit: data.header.unit
+                dx: indata.header.dx,
+                dy: indata.header.dy,
+                la1: indata.header.la1,
+                la2: indata.header.la2,
+                lo1: indata.header.lo1,
+                lo2: indata.header.lo2,
+                nx: indata.header.nx,
+                ny: indata.header.ny,
+                refTime: indata.header.refTime,
+                unit: indata.header.unit
             },
-            u: data.data.u,
-            v: data.data.v,
+            u: indata.data.u,
+            v: indata.data.v,
         }
     };
     // console.log(vector_products);
@@ -131,6 +131,7 @@ function vector_snake(params) {
             long = long + dx;
             // lat = lat - dy;
         }
+        // console.log(long, lat);
     }
     grid[-180] = grid[180];
     return grid;

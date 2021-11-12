@@ -4,7 +4,8 @@ import "./scss/all.scss";
 import { createApp } from "vue";
 // import * as fs from "fs";
 // 這行把在 data 裡的資料綁近來
-require.context("./data/", true, /^.*/);
+// require.context("./data/", true, /^.*/);
+require.context("../pubilc/data/", true, /^.*/);
 import { offcanvas, dropdown } from "bootstrap";
 import axios from "axios";
 import { Legend } from "./js/legend";
@@ -30,16 +31,16 @@ const app = createApp({
                 show_grid: true,
             },
             // data 相關
-            year: '2019',
-            month: '08',
-            day: '01',
+            year: '2021',
+            month: '10',
+            day: '23',
             tt: '09',
             info: {
                 year: '',
                 month: '',
                 day: '',
                 time: '09',
-                model: 'tiegcm',
+                model: 'dart',
                 vector_type: 'neutralWind',
                 overlay_type: 'electronDensity',
                 height: '300',
@@ -59,12 +60,12 @@ const app = createApp({
             // Colorbar 相關
             vector_show_colorbar: true,
             vector_colorbar_setting: {
-                colorbar_max_value: 500,
+                colorbar_max_value: 1000,
                 colorbar_view: "Sine",
             },
             overlay_show_colorbar: true,
             overlay_colorbar_setting: {
-                colorbar_max_value: 1,
+                colorbar_max_value: 20,
                 colorbar_view: "Turbo",
             },
             // Earth 相關
@@ -72,9 +73,10 @@ const app = createApp({
             scale_ratio: 700,
             // Rotation 相關
             automatic_rotation: false,
-            rotation_speed: 3,
+            rotation_speed: 0.003,
             manual_rotation_angle: [0, 0, 0],
             overlay_frame: '',
+            dec: -1,
             // 其餘參數
             sphere: {
                 type: "Sphere"
@@ -145,14 +147,14 @@ const app = createApp({
             this.info.height = event.target.value;
         },
         async init(){
-            let tmp_data = this.loadLocalStorageToInfo("info");
-            if(tmp_data !== null){
-                this.year = tmp_data.year;
-                this.month = tmp_data.month;
-                this.day = tmp_data.day;
-                this.tt = tmp_data.time;
-            }
-            this.date_list = await this.getData("data_diary.json");
+            // let tmp_data = this.loadLocalStorageToInfo("info");
+            // if(tmp_data !== null){
+            //     this.year = tmp_data.year;
+            //     this.month = tmp_data.month;
+            //     this.day = tmp_data.day;
+            //     this.tt = tmp_data.time;
+            // }
+            this.date_list = await this.getData("data_diary_dart.json");
             this.mapData = await this.getData("https://unpkg.com/world-atlas@1/world/110m.json");
             this.landData = await this.getData("https://unpkg.com/world-atlas@2.0.2/land-50m.json");
             this.getAllYears();
@@ -262,8 +264,11 @@ const app = createApp({
             const overlay_param = params_overlay(odata);
             // console.log(overlay_param);
             const overlay_grid = vector_snake_overlay(overlay_param);
-            // console.log(overlay_grid);
+
+            console.log(overlay_grid);
             const [longlist, latlist] = longlatlist(overlay_grid);
+            console.log(longlist);
+            console.log(latlist);
             const overlay_data = wind_overlay_data(overlay_grid, longlist, latlist, this.info.overlay_colorbar_scale);
             return {
                 overlay_grid: overlay_grid,
@@ -278,6 +283,8 @@ const app = createApp({
             let myImageData = new ImageData(data, overlay_width, overlay_height);
             await createImageBitmap(myImageData).then((result) => {
                 ctx.drawImage(result, 0, 0, overlay_width, overlay_height);
+                // let testdiv = document.getElementById("testdata");
+                // testdiv.appendChild(ctx.canvas);
                 // let testdiv = document.getElementById("test");
                 // testdiv.appendChild(ctx.canvas);
                 this.canvas_data = ctx.canvas;
@@ -367,33 +374,47 @@ const app = createApp({
             let particles_layer = this.canvasInfo.vector.getContext("2d");
             particles_layer.clearRect(0, 0, this.earthInfo.width, this.earthInfo.height);
         },
-        start_automatic_rotation(dec){
-            let wait_time;
-            let frame_rate = 30;
-            let frame_rate_time = 1000 / frame_rate;
-            this.automatic_rotation = true;
-            this.manual_rotation_angle = this.earthInfo.projection.rotate();
-            let selfs = this;
-
-            function tick(t){
-                if(!selfs.automatic_rotation){
-                    return;
+        start_automatic_rotation(dec, isRotate){
+            let earth_rotation = d3.timer((elasped) => {
+                let new_er = [this.manual_rotation_angle[0] + elasped * this.rotation_speed * dec, this.manual_rotation_angle[1], this.manual_rotation_angle[2]];
+                this.earthInfo.projection.rotate(new_er);
+                let cr = this.earthInfo.projection.rotate().map(x => to_radians(x));
+                drawScene(this.gl_data.gl, this.gl_data.program, [cr[0], cr[1]]);
+                d3.select("#map").selectAll(".segment").attr("d", this.earthInfo.path);
+                d3.select("#map").selectAll(".graticule").attr("d", this.earthInfo.path);
+                d3.select("#map").selectAll(".coastline").attr("d", this.earthInfo.path);
+                if(!isRotate){
+                    earth_rotation.stop();
                 }
-                let new_er = [selfs.manual_rotation_angle[0] + t / 1000 * selfs.rotation_speed * dec, selfs.manual_rotation_angle[1], selfs.manual_rotation_angle[2]];
-                selfs.earthInfo.projection.rotate(new_er);
-                let cr = selfs.earthInfo.projection.rotate().map(x => to_radians(x));
-                drawScene(selfs.gl_data.gl, selfs.gl_data.program, [cr[0], cr[1]]);
-                d3.select("#map").selectAll(".segment").attr("d", selfs.earthInfo.path);
-                d3.select("#map").selectAll(".graticule").attr("d", selfs.earthInfo.path);
-                d3.select("#map").selectAll(".coastline").attr("d", selfs.earthInfo.path);
-
-                wait_time = frame_rate_time - (performance.now() - t);
-                selfs.animation_flag = setTimeout(() => {
-                    selfs.overlay_frame = requestAnimationFrame(tick);
-                }, wait_time);
-            }
-            tick(performance.now());
+            });
         },
+        // start_automatic_rotation(dec){
+        //     let wait_time;
+        //     let frame_rate = 30;
+        //     let frame_rate_time = 1000 / frame_rate;
+        //     this.automatic_rotation = true;
+        //     this.manual_rotation_angle = this.earthInfo.projection.rotate();
+        //     let selfs = this;
+
+        //     function tick(t){
+        //         if(!selfs.automatic_rotation){
+        //             return;
+        //         }
+        //         let new_er = [selfs.manual_rotation_angle[0] + t / 1000 * selfs.rotation_speed * dec, selfs.manual_rotation_angle[1], selfs.manual_rotation_angle[2]];
+        //         selfs.earthInfo.projection.rotate(new_er);
+        //         let cr = selfs.earthInfo.projection.rotate().map(x => to_radians(x));
+        //         drawScene(selfs.gl_data.gl, selfs.gl_data.program, [cr[0], cr[1]]);
+        //         d3.select("#map").selectAll(".segment").attr("d", selfs.earthInfo.path);
+        //         d3.select("#map").selectAll(".graticule").attr("d", selfs.earthInfo.path);
+        //         d3.select("#map").selectAll(".coastline").attr("d", selfs.earthInfo.path);
+
+        //         wait_time = frame_rate_time - (performance.now() - t);
+        //         selfs.animation_flag = setTimeout(() => {
+        //             selfs.overlay_frame = requestAnimationFrame(tick);
+        //         }, wait_time);
+        //     }
+        //     tick(performance.now());
+        // },
         cancel_overlay_animation(){
             this.automatic_rotation = false;
             this.manual_rotation_angle = this.earthInfo.projection.rotate();
@@ -413,6 +434,9 @@ const app = createApp({
             // console.log(tmp_data);
             return tmp_data;
         },
+        delay(times){
+            return new Promise(resolve => setTimeout(resolve, times));
+        }
     },
     watch: {
         year(){
@@ -447,11 +471,20 @@ const app = createApp({
                 let v0, q0, r0;
                 let vector_tmpfn = this.info.year + "-" + this.info.month + "-" + this.info.day +
                             "-" + this.info.time + "00-" + this.info.model + "-" +
-                            this.info.vector_type + "-vector-" + this.info.height + "-gfs.json";
+                            this.info.vector_type + "-vector-" + this.info.height + ".json";
+                // let vector_tmpfn = "current-wind-surface-level-gfs-1.0.json";
+
+                // let vector_tmpfn = this.info.time + "00-" + this.info.model + "-" +
+                //             this.info.vector_type + "-vector-" + this.info.height + ".json";
+
 
                 let overlay_tmpfn = this.info.year + "-" + this.info.month + "-" + this.info.day +
                     "-" + this.info.time + "00-" + this.info.model + "-" +
-                    "electronDensity" + "-overlay-" + this.info.height + "-gfs.json";
+                    "electronDensity" + "-overlay-" + this.info.height + ".json";
+
+                // let overlay_tmpfn = this.info.time + "00-" + this.info.model + "-" +
+                //     "electronDensity" + "-overlay-" + this.info.height + ".json";
+
 
                 console.log(vector_tmpfn);
                 console.log(overlay_tmpfn);
@@ -461,6 +494,7 @@ const app = createApp({
                 let vector_data = this.getVectorData(data.vector);
                 let overlay_data = this.getOverlayData(data.overlay);
                 this.vectorData = vector_data.vector_grid;
+                console.log(this.vectorData);
                 // console.log(this.info.overlay_type);
                 // this.vectorData = vector_data;
                 // this.overlayData = overlay_data;
@@ -480,7 +514,7 @@ const app = createApp({
                 // console.log(earthInfo);
 
                 // console.log(document.getElementById("earth").innerHTML);
-
+                // console.log(onetest);
                 let viewBox_svg = this.createSvg("map", earthInfo.width, earthInfo.height);
                 let coastline = feature(this.mapData, this.mapData.objects.countries).features;
                 let landline = feature(this.landData, this.landData.objects.land).features;
@@ -557,28 +591,50 @@ const app = createApp({
             deep: true
         },
         layer_settings:{
-            handler(){
+            async handler(){
                 if(this.layer_settings.animation_type === "rotate_type"){
                     this.cancal_vector_animation();
                     if(this.layer_settings.rotation_dec === "left"){
-                        this.start_automatic_rotation(-1);
+                        this.dec = -1;
+                        this.automatic_rotation = true;
                     }else{
-                        this.start_automatic_rotation(1);
+                        this.dec = 1;
+                        this.automatic_rotation = true;
                     }
                 }else if(this.layer_settings.animation_type === "vector_type"){
-                    this.cancel_overlay_animation();
-                    let particles_layer = this.canvasInfo.vector.getContext("2d");
-                    this.start_vector_animation(particles_layer, this.vectorData);
+                    this.automatic_rotation = false;
+                    this.delay(800).then(()=> {
+                        let particles_layer = this.canvasInfo.vector.getContext("2d");
+                        this.start_vector_animation(particles_layer, this.vectorData);
+                    });
                 }else{
                     this.cancal_vector_animation();
-                    this.cancel_overlay_animation();
+                    this.automatic_rotation = false;
                 }
             },
             deep: true,
+        },
+        automatic_rotation(){
+            let new_er;
+            let earth_rotation = d3.timer((elasped) => {
+                new_er = [this.manual_rotation_angle[0] + elasped * this.rotation_speed * this.dec, this.manual_rotation_angle[1], this.manual_rotation_angle[2]];
+                this.earthInfo.projection.rotate(new_er);
+                let cr = this.earthInfo.projection.rotate().map(x => to_radians(x));
+                drawScene(this.gl_data.gl, this.gl_data.program, [cr[0], cr[1]]);
+                d3.select("#map").selectAll(".segment").attr("d", this.earthInfo.path);
+                d3.select("#map").selectAll(".graticule").attr("d", this.earthInfo.path);
+                d3.select("#map").selectAll(".coastline").attr("d", this.earthInfo.path);
+                // this.manual_rotation_angle = new_er;
+                if (!this.automatic_rotation) {
+                    this.manual_rotation_angle = new_er;
+                    earth_rotation.stop();
+                    // return new_er;
+                }
+            });
+
         }
     },
     mounted() {
-
         this.init();
     },
 });
