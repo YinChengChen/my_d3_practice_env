@@ -17,6 +17,10 @@
         Guide
       </button>
     </div>
+    <div class="position-absolute start-0 bottom-0 mx-2 mb-2">
+        <p>{{ info.year }}/{{ info.month }}/{{ info.day }}</p>
+        <p>{{ info.time }}:00 UT</p>
+    </div>
     <!-- Modal -->
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog">
@@ -26,11 +30,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <h3>Introduction</h3>
+            <p>This page is used to display DART-TIEGCM model information.</p>
+            <p>The animation of white lines means neutral wind or ExB drift.</p>
+            <p>The purpose of the exhibition is to observe the impact of ionospheric dynamic wind field or plasma drift on electron concentration.</p>
             <h3>Step</h3>
             <p>1. Select Year -> Month -> Day (If not select day, data will not update.)</p>
-            <p>2. Select Vector, Overlay, Height (default is 300 km)</p>
+            <p>2. Select Vector, Overlay, Height (Default is 300 km).</p>
             <h3>Notice</h3>
-            <p>Updating will take a few seconds. (The author still don't know how to set a spinner.)</p>
+            <p>Updating will take a few seconds. (The earth will temporarily disappear.)</p>
+            <p>There are some errors in the animation at the earth's boundary. (Not fix yet.)</p>
           </div>
           <!-- <div class="modal-footer">
             <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
@@ -155,24 +164,31 @@
               <li class="container px-0 pt-2 pb-2">
                 <ul class="list-unstyled">
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation" value="rotate_type"
+                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation_type" value="rotate_type"
                       v-model="layer_settings.animation_type">
                     <label class="form-check-label" for="rotate_type">
                       Rotate
                     </label>
                   </li>
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forAnimation" id="rotationRight"
+                    <input class="form-check-input" type="radio" name="forAnimation" id="vector_type"
                       value="vector_type" v-model="layer_settings.animation_type">
                     <label class="form-check-label" for="type">
                       Vector
                     </label>
                   </li>
                   <li class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="forAnimation" id="rotation" value="none_type"
+                    <input class="form-check-input" type="radio" name="forAnimation" id="none_type" value="none_type"
                       v-model="layer_settings.animation_type">
                     <label class="form-check-label" for="none_type">
                       None
+                    </label>
+                  </li>
+                  <li class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="forAnimation" id="play_type" value="play_type"
+                      v-model="layer_settings.animation_type">
+                    <label class="form-check-label" for="play_type">
+                      Play
                     </label>
                   </li>
                 </ul>

@@ -2,10 +2,9 @@ import "./scss/all.scss";
 // import myImage from "./images/world.topo.bathy.200401.3x5400x2700.jpg";
 // import { main, initShaderProgram } from "./js/wegGLfunction";
 import { createApp } from "vue";
-// import * as fs from "fs";
 // 這行把在 data 裡的資料綁近來
 // require.context("./data/", true, /^.*/);
-require.context("../pubilc/data/", true, /^.*/);
+require.context("../public/data/", true, /^.*/);
 import { offcanvas, dropdown } from "bootstrap";
 import axios from "axios";
 import { Legend } from "./js/legend";
@@ -19,8 +18,6 @@ import { advance_particle, generate_particles, get_radius_and_center } from "./j
 // import { Versor } from "versor";
 import {versor} from "./js/versor_function";
 // import { dragstart } from "./js/drag_functions";
-// import fetch from "node-fetch";
-// const versor = require("versor");
 // console.log(data);
 const app = createApp({
     data() {
@@ -92,10 +89,10 @@ const app = createApp({
             show_vector_animation: true,
             vector_frame: '',
             vector_settings: {
-                alpha_decay: 0.95,
+                alpha_decay: 0.9,
                 particles_travel: 2000,
-                number_of_particles: 3500,
-                max_age_of_particles: 35,
+                number_of_particles: 3000,
+                max_age_of_particles: 25,
             },
             layer_settings: {
                 rotation_dec: "left",
@@ -166,15 +163,11 @@ const app = createApp({
             this.info.time = this.tt;
             // For Vector ColorBar
             let vector_colorbar = this.setLegend(this.vector_colorbar_setting, "vector");
-            // console.log(vector_colorbar);
-            // d3.select("#legends").node().appendChild(vector_colorbar.legend);
             this.info.vector_colorbar_scale = vector_colorbar.scale;
             d3.select("#vector_legend").node().appendChild(vector_colorbar.legend);
             let overlay_colorbar = this.setLegend(this.overlay_colorbar_setting, "overlay");
-            // d3.select("#legends").node().appendChild(overlay_colorbar.legend);
             this.info.overlay_colorbar_scale = overlay_colorbar.scale;
             d3.select("#overlay_legend").node().appendChild(overlay_colorbar.legend);
-            // console.log(overlay_colorbar);
             let div_element = document.getElementById("globe");
             let side = div_element.getBoundingClientRect().height;
             // console.log(div_element.getBoundingClientRect().height);
@@ -234,7 +227,6 @@ const app = createApp({
         createSvg(svg_id, width, height){
             let map_svg = d3.create("svg").attr("viewBox", [0, 0, width, height]).attr("fill", "black").attr("preserveAspectRatio", "xMidYMid").attr("id", svg_id);
             return map_svg;
-            // d3.select("#earth").node().appendChild(map_svg);
         },
         // Draw Function
         drawGraticule(projection, width, height, path, svg_node){
@@ -250,10 +242,7 @@ const app = createApp({
         getVectorData(vdata){
             const vector_params = params(vdata);
             const vector_grid = vector_snake(vector_params);
-            // this.vector_tmp_grid = vector_grid;
-            // console.log(vector_grid);
             const [longlist, latlist] = longlatlist(vector_grid);
-            // console.log(longlist, latlist);
             const vector_data = wind_overlay_data(vector_grid, longlist, latlist, this.info.vector_colorbar_scale);
             return {
                 vector_grid: vector_grid,
@@ -262,13 +251,8 @@ const app = createApp({
         },
         getOverlayData(odata){
             const overlay_param = params_overlay(odata);
-            // console.log(overlay_param);
             const overlay_grid = vector_snake_overlay(overlay_param);
-
-            console.log(overlay_grid);
             const [longlist, latlist] = longlatlist(overlay_grid);
-            console.log(longlist);
-            console.log(latlist);
             const overlay_data = wind_overlay_data(overlay_grid, longlist, latlist, this.info.overlay_colorbar_scale);
             return {
                 overlay_grid: overlay_grid,
@@ -283,14 +267,8 @@ const app = createApp({
             let myImageData = new ImageData(data, overlay_width, overlay_height);
             await createImageBitmap(myImageData).then((result) => {
                 ctx.drawImage(result, 0, 0, overlay_width, overlay_height);
-                // let testdiv = document.getElementById("testdata");
-                // testdiv.appendChild(ctx.canvas);
-                // let testdiv = document.getElementById("test");
-                // testdiv.appendChild(ctx.canvas);
                 this.canvas_data = ctx.canvas;
-                // return ctx.canvas;
             });
-            // return canvas_data;
         },
         // 給 gl 使用的 functions : createForeignObject, createCanvasElement, createGL
         createForeignObject(node){
@@ -298,8 +276,6 @@ const app = createApp({
             let foreignObject = node.append("foreignObject").attr("x", 0).attr("y", 0).attr("width", this.earthInfo.width).attr("height", this.earthInfo.height);
             let foreignBody = foreignObject.append("xhtml:body").attr("margin", "0px").attr("padding", "0px").attr("background-color", "none").attr("width", this.earthInfo.width + "px").attr("height", this.earthInfo.height + "px");
             return foreignBody;
-            // let foreignObject = viewBox_svg.append("foreignObject").attr("x", 0).attr("y", 0).attr("width", this.earthInfo.width).attr("height", this.earthInfo.height);
-            // let foreignBody = foreignObject.append("xhtml:body").attr("margin", "0px").attr("padding", "0px").attr("background-color", "none").attr("width", this.earthInfo.width + "px").attr("height", this.earthInfo.height + "px");
         },
         createCanvasElement(){
             let overlay_canvas = createCanvas(this.earthInfo.width, this.earthInfo.height, "overlay");
@@ -388,39 +364,6 @@ const app = createApp({
                 }
             });
         },
-        // start_automatic_rotation(dec){
-        //     let wait_time;
-        //     let frame_rate = 30;
-        //     let frame_rate_time = 1000 / frame_rate;
-        //     this.automatic_rotation = true;
-        //     this.manual_rotation_angle = this.earthInfo.projection.rotate();
-        //     let selfs = this;
-
-        //     function tick(t){
-        //         if(!selfs.automatic_rotation){
-        //             return;
-        //         }
-        //         let new_er = [selfs.manual_rotation_angle[0] + t / 1000 * selfs.rotation_speed * dec, selfs.manual_rotation_angle[1], selfs.manual_rotation_angle[2]];
-        //         selfs.earthInfo.projection.rotate(new_er);
-        //         let cr = selfs.earthInfo.projection.rotate().map(x => to_radians(x));
-        //         drawScene(selfs.gl_data.gl, selfs.gl_data.program, [cr[0], cr[1]]);
-        //         d3.select("#map").selectAll(".segment").attr("d", selfs.earthInfo.path);
-        //         d3.select("#map").selectAll(".graticule").attr("d", selfs.earthInfo.path);
-        //         d3.select("#map").selectAll(".coastline").attr("d", selfs.earthInfo.path);
-
-        //         wait_time = frame_rate_time - (performance.now() - t);
-        //         selfs.animation_flag = setTimeout(() => {
-        //             selfs.overlay_frame = requestAnimationFrame(tick);
-        //         }, wait_time);
-        //     }
-        //     tick(performance.now());
-        // },
-        cancel_overlay_animation(){
-            this.automatic_rotation = false;
-            this.manual_rotation_angle = this.earthInfo.projection.rotate();
-            cancelAnimationFrame(this.overlay_frame);
-            clearTimeout(this.overlay_frame);
-        },
         saveInfoToLocalStorage(data_name, data){
             // console.log(localStorage.getItem("test"));
             // console.log("save", data_name);
@@ -436,6 +379,23 @@ const app = createApp({
         },
         delay(times){
             return new Promise(resolve => setTimeout(resolve, times));
+        },
+        async auto_play(){
+            for (let k = 0; k<50; k++){
+                await this.delay(1000).then(()=>{
+                    this.automatic_rotation = true;
+                });
+                await this.delay(10000).then(()=>{
+                    this.automatic_rotation = false;
+                });
+                await this.delay(1000).then(()=>{
+                    let particles_layer = this.canvasInfo.vector.getContext("2d");
+                    this.start_vector_animation(particles_layer, this.vectorData);
+                });
+                await this.delay(10000).then(()=>{
+                    this.cancal_vector_animation();
+                });
+            }            
         }
     },
     watch: {
@@ -464,7 +424,6 @@ const app = createApp({
             async handler(){
                 // 重製圖層
                 if(!(d3.select("#map").node() === null)){
-                    // console.log("Create", d3.select("#map").node());
                     this.cancal_vector_animation();
                     d3.select("#map").remove();
                 }
@@ -472,56 +431,31 @@ const app = createApp({
                 let vector_tmpfn = this.info.year + "-" + this.info.month + "-" + this.info.day +
                             "-" + this.info.time + "00-" + this.info.model + "-" +
                             this.info.vector_type + "-vector-" + this.info.height + ".json";
-                // let vector_tmpfn = "current-wind-surface-level-gfs-1.0.json";
-
-                // let vector_tmpfn = this.info.time + "00-" + this.info.model + "-" +
-                //             this.info.vector_type + "-vector-" + this.info.height + ".json";
-
-
+              
                 let overlay_tmpfn = this.info.year + "-" + this.info.month + "-" + this.info.day +
                     "-" + this.info.time + "00-" + this.info.model + "-" +
                     "electronDensity" + "-overlay-" + this.info.height + ".json";
 
-                // let overlay_tmpfn = this.info.time + "00-" + this.info.model + "-" +
-                //     "electronDensity" + "-overlay-" + this.info.height + ".json";
-
-
+              
                 console.log(vector_tmpfn);
                 console.log(overlay_tmpfn);
                 let data  = await this.loadData(vector_tmpfn, overlay_tmpfn);
-                // console.log(data);
-                // this.allData = data;
                 let vector_data = this.getVectorData(data.vector);
                 let overlay_data = this.getOverlayData(data.overlay);
                 this.vectorData = vector_data.vector_grid;
-                console.log(this.vectorData);
-                // console.log(this.info.overlay_type);
-                // this.vectorData = vector_data;
-                // this.overlayData = overlay_data;
                 if (this.info.overlay_type === "electronDensity"){
-                //     console.log("Go overlay");
                     await this.loadDataToCanvas(overlay_data.overlay_overlay);
                 }else{
-                //     console.log("Go vector");
                     await this.loadDataToCanvas(vector_data.vector_overlay);
                 }
-                // console.log(canvas_data);
-                // console.log(vector_data);
-                // let div_element = d3.select("#globe");
-
+                
                 let earthInfo = this.setEarthInfo();
                 this.earthInfo = earthInfo;
-                // console.log(earthInfo);
-
-                // console.log(document.getElementById("earth").innerHTML);
-                // console.log(onetest);
+               
                 let viewBox_svg = this.createSvg("map", earthInfo.width, earthInfo.height);
                 let coastline = feature(this.mapData, this.mapData.objects.countries).features;
                 let landline = feature(this.landData, this.landData.objects.land).features;
-                // let graticule = d3.geoGraticule10();
-
-
-
+                
                 this.drawGraticule(earthInfo.projection, earthInfo.width, earthInfo.height, earthInfo.path, viewBox_svg);
                 this.drawMap(viewBox_svg, earthInfo.path);
                 viewBox_svg.selectAll(".coastline").data(landline).enter().append("path").attr("class", "coastline").attr("d", earthInfo.path).style("stroke", "#ffffff").attr("stroke-width", 1).attr("fill", "none");
@@ -542,9 +476,6 @@ const app = createApp({
                     r0 = earthInfo.projection.rotate();
                     q0 = versor(r0);
                     viewBox_svg.selectAll(".segment").remove();
-                //     if(selfs.automatic_rotation){
-                //         selfs.automatic_rotation = false;
-                //     }
                 }).on("drag", function (e) {
                     // console.log("drag");
                     const v1 = versor.cartesian(earthInfo.projection.rotate(r0).invert([e.x, e.y]));
@@ -557,14 +488,10 @@ const app = createApp({
                     viewBox_svg.selectAll(".graticule").attr("d", earthInfo.path);
                     viewBox_svg.selectAll(".coastline").attr("d", earthInfo.path);
                 }).on("end", function () {
-                    // console.log("ending");
                     viewBox_svg.selectAll(".segment").data(coastline).enter().append("path").attr("class", "segment").attr("d", earthInfo.path).style("stroke", "#ffffff").attr("stroke-width", 1).attr("fill", "none");
                     selfs.manual_rotation_angle = earthInfo.projection.rotate();
-                //     // console.log(selfs.manual_rotation_angle);
-                //     if(!selfs.automatic_rotation){
                     let particles_layer = selfs.canvasInfo.vector.getContext("2d");
                     selfs.start_vector_animation(particles_layer, selfs.vectorData);
-                //     }
                 }));
 
                 d3.select("#earth").node().append(viewBox_svg.node());
@@ -592,6 +519,8 @@ const app = createApp({
         },
         layer_settings:{
             async handler(){
+                this.cancal_vector_animation();
+                this.automatic_rotation = false;
                 if(this.layer_settings.animation_type === "rotate_type"){
                     this.cancal_vector_animation();
                     if(this.layer_settings.rotation_dec === "left"){
@@ -607,9 +536,8 @@ const app = createApp({
                         let particles_layer = this.canvasInfo.vector.getContext("2d");
                         this.start_vector_animation(particles_layer, this.vectorData);
                     });
-                }else{
-                    this.cancal_vector_animation();
-                    this.automatic_rotation = false;
+                }else if (this.layer_settings.animation_type === "play_type"){
+                   this.auto_play();
                 }
             },
             deep: true,
@@ -624,14 +552,11 @@ const app = createApp({
                 d3.select("#map").selectAll(".segment").attr("d", this.earthInfo.path);
                 d3.select("#map").selectAll(".graticule").attr("d", this.earthInfo.path);
                 d3.select("#map").selectAll(".coastline").attr("d", this.earthInfo.path);
-                // this.manual_rotation_angle = new_er;
                 if (!this.automatic_rotation) {
                     this.manual_rotation_angle = new_er;
                     earth_rotation.stop();
-                    // return new_er;
                 }
             });
-
         }
     },
     mounted() {
